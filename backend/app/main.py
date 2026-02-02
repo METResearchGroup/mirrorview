@@ -60,4 +60,3 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
     except Exception as e:
         # Catch-all: keep response bounded but still report something actionable.
         raise HTTPException(status_code=500, detail=f"Unhandled error: {type(e).__name__}: {e}") from e
-
