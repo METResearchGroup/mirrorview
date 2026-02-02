@@ -1,2 +1,5 @@
 .vercel
 .env*.local
+*.env*
+*__pycache__*
+*uv.lock*

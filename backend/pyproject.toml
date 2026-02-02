@@ -1,0 +1,27 @@
+[project]
+name = "mirrorview-backend"
+version = "0.1.0"
+description = "MirrorView FastAPI backend"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+  "python-dotenv",
+  "litellm",
+  "openai",
+  "tenacity",
+  "pyyaml",
+  "boto3",
+]
+
+[dependency-groups]
+dev = [
+  "ruff",
+  "pytest",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
