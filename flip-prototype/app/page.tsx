@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export default function Home() {
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const canFlip = inputText.trim().length > 0;
+  const canReset = inputText.trim() !== "" || flippedText !== null;
   const showCustomVersion = feedback === "down";
 
   function handleFlip() {
@@ -39,6 +40,13 @@ export default function Home() {
     }
 
     setFlippedText(output);
+    setFeedback(null);
+    setCustomVersion("");
+  }
+
+  function handleReset() {
+    setInputText("");
+    setFlippedText(null);
     setFeedback(null);
     setCustomVersion("");
   }
@@ -77,8 +85,21 @@ export default function Home() {
     <div className="min-h-dvh bg-muted/30">
       <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
         <header className="mb-10 space-y-2">
-          <div className="text-sm font-medium text-muted-foreground">
-            MirrorView
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm font-medium text-muted-foreground">
+              MirrorView
+            </div>
+            {canReset && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+              >
+                <RotateCcw aria-hidden="true" />
+                Reset progress
+              </Button>
+            )}
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">
             Flip a post (prototype)
