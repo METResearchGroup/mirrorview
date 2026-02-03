@@ -53,9 +53,8 @@ def health() -> dict[str, str]:
 
 @app.post("/generate_response", response_model=FlipResponse)
 def generate_response(req: GenerateResponseRequest) -> FlipResponse:
-    # Validate + structured-log payload (correlation key for future DB storage).
     try:
-        payload = req.model_dump(mode="json")  # Pydantic v2
+        payload = req.model_dump(mode="json")
         submission_id = payload["submission"]["id"] if req.submission is not None else None
     except Exception:
         logger.exception("Failed to serialize /generate_response request for logging")
@@ -69,7 +68,6 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
         req.submission is not None,
     )
 
-    # LiteLLM expects messages as list[dict] with role/content.
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": FLIP_PROMPT},
         {"role": "user", "content": req.text},
@@ -80,7 +78,7 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
         return llm.structured_completion(
             messages=messages,
             response_model=FlipResponse,
-            model=None,  # Use default from models.yaml (gpt-4o-mini)
+            model=None,  # Use default from models.yaml
         )
     except (LLMAuthError,) as e:
         raise HTTPException(status_code=401, detail=str(e)) from e
@@ -95,9 +93,8 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
 
 @app.post("/feedback/thumb", response_model=AckResponse)
 def submit_thumb_feedback(req: ThumbFeedbackRequest) -> AckResponse:
-    # Validate + structured-log payload (correlation key for future DB storage).
     try:
-        payload = req.model_dump(mode="json")  # Pydantic v2
+        payload = req.model_dump(mode="json")
         submission_id = payload["submission"]["id"]
     except Exception:
         logger.exception("Failed to serialize /feedback/thumb request for logging")
@@ -114,9 +111,8 @@ def submit_thumb_feedback(req: ThumbFeedbackRequest) -> AckResponse:
 
 @app.post("/feedback/edit", response_model=AckResponse)
 def submit_edit_feedback(req: EditFeedbackRequest) -> AckResponse:
-    # Validate + structured-log payload (correlation key for future DB storage).
     try:
-        payload = req.model_dump(mode="json")  # Pydantic v2
+        payload = req.model_dump(mode="json")
         submission_id = payload["submission"]["id"]
     except Exception:
         logger.exception("Failed to serialize /feedback/edit request for logging")
