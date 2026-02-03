@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MirrorView — Flip Prototype",
-  description: "Frontend-only prototype to demo a post-flipping workflow.",
+  title: "MirrorView — Flip a post",
+  description: "Paste a post and we'll generate a flipped version.",
 };
 
 export default function RootLayout({
