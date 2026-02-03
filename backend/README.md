@@ -52,7 +52,7 @@ CORS_ORIGINS=http://localhost:3000,https://your-app.vercel.app
 ### Railway deployment
 
 - Create a Railway project pointing at this repo.
-- Set **service root** to `backend/` (or use the included Dockerfile).
+- In the service **Settings**, set **Root Directory** to `backend` so Railway builds from this directory (finds `Dockerfile` and `railway.json` here).
 - Set env vars:
   - `OPENAI_API_KEY`
   - `RUN_MODE=local`
