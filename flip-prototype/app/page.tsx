@@ -18,9 +18,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Feedback = "up" | "down" | null;
 
+type FlipApiResponse = {
+  flipped_text?: string;
+  explanation?: string;
+};
+
+const EXPLANATION_COLLAPSE_THRESHOLD_CHARS = 400;
+
 export default function Home() {
   const [inputText, setInputText] = React.useState("");
   const [flippedText, setFlippedText] = React.useState<string | null>(null);
+  const [explanation, setExplanation] = React.useState<string | null>(null);
+  const [isExplanationOpen, setIsExplanationOpen] = React.useState(true);
   const [feedback, setFeedback] = React.useState<Feedback>(null);
   const [customVersion, setCustomVersion] = React.useState("");
   const [isFlipping, setIsFlipping] = React.useState(false);
@@ -28,7 +37,7 @@ export default function Home() {
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const canFlip = inputText.trim().length > 0;
-  const canReset = inputText.trim() !== "" || flippedText !== null;
+  const canReset = inputText.trim() !== "" || flippedText !== null || explanation !== null;
   const showCustomVersion = feedback === "down";
 
   async function handleFlip() {
@@ -64,13 +73,22 @@ export default function Home() {
         return;
       }
 
-      const data = (await res.json()) as { flipped_text?: string; explanation?: string };
+      const data = (await res.json()) as FlipApiResponse;
       if (!data?.flipped_text) {
         toast.error("Backend returned no flipped_text.");
         return;
       }
 
       setFlippedText(data.flipped_text);
+      const nextExplanation =
+        typeof data.explanation === "string" && data.explanation.trim()
+          ? data.explanation
+          : null;
+      setExplanation(nextExplanation);
+      setIsExplanationOpen(
+        nextExplanation !== null &&
+          nextExplanation.length <= EXPLANATION_COLLAPSE_THRESHOLD_CHARS,
+      );
       setFeedback(null);
       setCustomVersion("");
     } catch (e) {
@@ -83,8 +101,14 @@ export default function Home() {
   function handleReset() {
     setInputText("");
     setFlippedText(null);
+    setExplanation(null);
+    setIsExplanationOpen(true);
     setFeedback(null);
     setCustomVersion("");
+  }
+
+  function handleExplanationToggle(e: React.SyntheticEvent<HTMLDetailsElement>) {
+    setIsExplanationOpen(e.currentTarget.open);
   }
 
   function handleThumbUp() {
@@ -185,10 +209,24 @@ export default function Home() {
                   Review the output, then give a quick thumbs up or down.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="whitespace-pre-wrap rounded-lg border bg-background px-4 py-3 text-sm leading-6">
                   {flippedText}
                 </div>
+                {explanation !== null && (
+                  <details
+                    open={isExplanationOpen}
+                    onToggle={handleExplanationToggle}
+                    className="rounded-lg border bg-background"
+                  >
+                    <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
+                      Explanation
+                    </summary>
+                    <div className="whitespace-pre-wrap border-t px-4 py-3 text-sm leading-6 text-muted-foreground">
+                      {explanation}
+                    </div>
+                  </details>
+                )}
               </CardContent>
               <CardFooter className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
