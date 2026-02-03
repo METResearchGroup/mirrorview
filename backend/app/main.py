@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any
 
@@ -8,6 +9,8 @@ from app.schemas import FlipResponse, GenerateResponseRequest
 from ml_tooling.llm.exceptions import LLMAuthError, LLMInvalidRequestError, LLMTransientError
 from ml_tooling.llm.llm_service import get_llm_service
 from prompts import FLIP_PROMPT
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_cors_origins() -> list[str]:
@@ -38,6 +41,22 @@ def health() -> dict[str, str]:
 
 @app.post("/generate_response", response_model=FlipResponse)
 def generate_response(req: GenerateResponseRequest) -> FlipResponse:
+    # Validate + structured-log payload (correlation key for future DB storage).
+    try:
+        payload = req.model_dump(mode="json")  # Pydantic v2
+        submission_id = payload["submission"]["id"] if req.submission is not None else None
+    except Exception:
+        logger.exception("Failed to serialize /generate_response request for logging")
+        raise
+
+    text_len = len(req.text) if isinstance(req.text, str) else None
+    logger.info(
+        "generate_response request submission_id=%s text_len=%s has_submission=%s",
+        submission_id,
+        text_len,
+        req.submission is not None,
+    )
+
     # LiteLLM expects messages as list[dict] with role/content.
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": FLIP_PROMPT},

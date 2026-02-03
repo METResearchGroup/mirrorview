@@ -18,6 +18,12 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Feedback = "up" | "down" | null;
 
+type SubmissionContext = {
+  id: string;
+  created_at: string;
+  input_text: string;
+};
+
 type FlipApiResponse = {
   flipped_text?: string;
   explanation?: string;
@@ -32,6 +38,7 @@ export default function Home() {
   const [isExplanationOpen, setIsExplanationOpen] = React.useState(true);
   const [feedback, setFeedback] = React.useState<Feedback>(null);
   const [customVersion, setCustomVersion] = React.useState("");
+  const [submission, setSubmission] = React.useState<SubmissionContext | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -55,10 +62,17 @@ export default function Home() {
 
     try {
       setIsFlipping(true);
+      const nextSubmission: SubmissionContext = {
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        input_text: trimmed,
+      };
+      setSubmission(nextSubmission);
+
       const res = await fetch(`${baseUrl}/generate_response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
+        body: JSON.stringify({ text: trimmed, submission: nextSubmission }),
       });
 
       if (!res.ok) {
@@ -105,6 +119,7 @@ export default function Home() {
     setIsExplanationOpen(true);
     setFeedback(null);
     setCustomVersion("");
+    setSubmission(null);
   }
 
   function handleExplanationToggle(e: React.SyntheticEvent<HTMLDetailsElement>) {
@@ -133,6 +148,7 @@ export default function Home() {
 
     // Frontend-only prototype: no network call.
     console.log("Custom version submitted (mock):", {
+      submission,
       inputText,
       flippedText,
       customVersion: trimmed,
