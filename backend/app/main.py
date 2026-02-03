@@ -44,14 +44,10 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
     # Validate + structured-log payload (correlation key for future DB storage).
     try:
         payload = req.model_dump(mode="json")  # Pydantic v2
-    except AttributeError:
-        payload = req.dict()  # Pydantic v1
-    submission_id = None
-    try:
-        submission = payload.get("submission") if isinstance(payload, dict) else None
-        submission_id = submission.get("id") if isinstance(submission, dict) else None
+        submission_id = payload["submission"]["id"] if req.submission is not None else None
     except Exception:
-        submission_id = None
+        logger.exception("Failed to serialize /generate_response request for logging")
+        raise
 
     logger.info("generate_response request submission_id=%s payload=%s", submission_id, payload)
 
