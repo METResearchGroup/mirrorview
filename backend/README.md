@@ -21,6 +21,14 @@ From `backend/`:
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### Tests
+
+From `backend/`:
+
+```bash
+uv run pytest
+```
+
 ### Environment variables
 
 The backend loads `OPENAI_API_KEY` from the repo-root `.env` file.

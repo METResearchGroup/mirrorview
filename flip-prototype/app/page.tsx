@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Loader2, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export default function Home() {
   const [customVersion, setCustomVersion] = React.useState("");
   const [submission, setSubmission] = React.useState<SubmissionContext | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
+  const [isSubmittingThumb, setIsSubmittingThumb] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -126,35 +127,150 @@ export default function Home() {
     setIsExplanationOpen(e.currentTarget.open);
   }
 
-  function handleThumbUp() {
-    setFeedback("up");
-    toast.success("Thanks — feedback recorded (mock).");
+  async function handleThumbUp() {
+    if (isSubmittingThumb) return;
+    if (!submission) {
+      toast.error("No submission available. Please flip text first.");
+      return;
+    }
+
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    setIsSubmittingThumb(true);
+    try {
+      setFeedback("up");
+      const res = await fetch(`${baseUrl}/feedback/thumb`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission,
+          vote: "up",
+          voted_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        setFeedback(null);
+        return;
+      }
+
+      toast.success("Thanks — feedback recorded.");
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      setFeedback(null);
+    } finally {
+      setIsSubmittingThumb(false);
+    }
   }
 
-  function handleThumbDown() {
-    setFeedback("down");
-    toast("Got it. Write your preferred version below.");
+  async function handleThumbDown() {
+    if (isSubmittingThumb) return;
+    if (!submission) {
+      toast.error("No submission available. Please flip text first.");
+      return;
+    }
 
-    // Defer focus until the textarea exists in the DOM.
-    queueMicrotask(() => customTextareaRef.current?.focus());
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    setIsSubmittingThumb(true);
+    try {
+      setFeedback("down");
+      const res = await fetch(`${baseUrl}/feedback/thumb`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission,
+          vote: "down",
+          voted_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        setFeedback(null);
+        return;
+      }
+
+      toast("Got it. Write your preferred version below.");
+
+      // Defer focus until the textarea exists in the DOM.
+      queueMicrotask(() => customTextareaRef.current?.focus());
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      setFeedback(null);
+    } finally {
+      setIsSubmittingThumb(false);
+    }
   }
 
-  function handleSubmitCustom() {
+  async function handleSubmitCustom() {
     const trimmed = customVersion.trim();
     if (!trimmed) {
       toast.error("Please write your version before submitting.");
       return;
     }
 
-    // Frontend-only prototype: no network call.
-    console.log("Custom version submitted (mock):", {
-      submission,
-      inputText,
-      flippedText,
-      customVersion: trimmed,
-    });
+    if (!submission) {
+      toast.error("No submission available. Please flip text first.");
+      return;
+    }
 
-    toast.success("Submitted (mock).");
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${baseUrl}/feedback/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission,
+          edited_text: trimmed,
+          edited_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        return;
+      }
+
+      toast.success("Your version has been submitted.");
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+    }
   }
 
   return (
@@ -252,8 +368,13 @@ export default function Home() {
                     size="icon"
                     onClick={handleThumbUp}
                     aria-label="Thumbs up"
+                    disabled={isSubmittingThumb}
                   >
-                    <ThumbsUp className="h-4 w-4" />
+                    {isSubmittingThumb ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ThumbsUp className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -261,8 +382,13 @@ export default function Home() {
                     size="icon"
                     onClick={handleThumbDown}
                     aria-label="Thumbs down"
+                    disabled={isSubmittingThumb}
                   >
-                    <ThumbsDown className="h-4 w-4" />
+                    {isSubmittingThumb ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ThumbsDown className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -304,7 +430,7 @@ export default function Home() {
                     Submit
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Stored nowhere (mock).
+                    Calls <span className="font-mono">POST /feedback/edit</span>.
                   </div>
                 </CardFooter>
               </Card>
