@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { mockFlip } from "@/lib/mockFlip";
 
 type Feedback = "up" | "down" | null;
 
@@ -24,6 +23,7 @@ export default function Home() {
   const [flippedText, setFlippedText] = React.useState<string | null>(null);
   const [feedback, setFeedback] = React.useState<Feedback>(null);
   const [customVersion, setCustomVersion] = React.useState("");
+  const [isFlipping, setIsFlipping] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -31,17 +31,53 @@ export default function Home() {
   const canReset = inputText.trim() !== "" || flippedText !== null;
   const showCustomVersion = feedback === "down";
 
-  function handleFlip() {
-    const output = mockFlip(inputText);
-
-    if (!output) {
+  async function handleFlip() {
+    const trimmed = inputText.trim();
+    if (!trimmed) {
       toast.error("Paste some text to flip.");
       return;
     }
 
-    setFlippedText(output);
-    setFeedback(null);
-    setCustomVersion("");
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    try {
+      setIsFlipping(true);
+      const res = await fetch(`${baseUrl}/generate_response`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        return;
+      }
+
+      const data = (await res.json()) as { flipped_text?: string; explanation?: string };
+      if (!data?.flipped_text) {
+        toast.error("Backend returned no flipped_text.");
+        return;
+      }
+
+      setFlippedText(data.flipped_text);
+      setFeedback(null);
+      setCustomVersion("");
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+    } finally {
+      setIsFlipping(false);
+    }
   }
 
   function handleReset() {
@@ -106,8 +142,8 @@ export default function Home() {
           </h1>
           <p className="text-base leading-7 text-muted-foreground">
             Paste a post and we’ll generate a flipped version. This is{" "}
-            <span className="font-medium text-foreground">mocked</span> for now
-            (frontend-only) — backend LLM integration comes next.
+            <span className="font-medium text-foreground">powered by the backend</span>{" "}
+            (configure <span className="font-mono">NEXT_PUBLIC_API_URL</span>).
           </p>
         </header>
 
@@ -131,11 +167,11 @@ export default function Home() {
             />
           </CardContent>
           <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button onClick={handleFlip} disabled={!canFlip}>
-              Flip
+            <Button onClick={handleFlip} disabled={!canFlip || isFlipping}>
+              {isFlipping ? "Flipping…" : "Flip"}
             </Button>
             <div className="text-sm text-muted-foreground">
-              No backend. Deterministic mock flip.
+              Calls <span className="font-mono">POST /generate_response</span>.
             </div>
           </CardFooter>
         </Card>

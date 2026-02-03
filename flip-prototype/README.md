@@ -1,13 +1,13 @@
-## MirrorView — Flip Prototype (Frontend Only)
+## MirrorView — Flip Prototype (Next.js)
 
 Prototype UI to demonstrate a “post flipping” workflow:
 
 - Paste a post
-- Click **Flip** (mocked client-side transform)
+- Click **Flip** (calls the backend API)
 - Give **thumbs up / thumbs down**
 - If thumbs down, write **your version** and **Submit** (still mocked; no network)
 
-This repo currently contains **no backend** by design. The LLM-powered flip will be added later.
+This UI is designed to call the FastAPI backend endpoint `POST /generate_response`.
 
 ## Getting Started
 
@@ -20,10 +20,20 @@ npm run dev
 
 Open `http://localhost:3000` in your browser.
 
+### Configure backend URL
+
+Set `NEXT_PUBLIC_API_URL` to your backend base URL.
+
+Local dev example (FastAPI on port 8000):
+
+```bash
+export NEXT_PUBLIC_API_URL="http://localhost:8000"
+npm run dev
+```
+
 ### Key files
 
 - `app/page.tsx`: main UI (input → flip → result → feedback → optional custom version)
-- `lib/mockFlip.ts`: deterministic mock flip logic
 - `app/layout.tsx`: app layout + toasts
 
 ### Production build
@@ -49,4 +59,4 @@ Then click **Deploy**.
 ## Notes
 
 - Feedback submission currently just logs to the console and shows a toast.
-- When the backend is added, the flip action will call an API endpoint and the feedback will be persisted.
+- Flip calls `POST /generate_response` on the backend and displays `flipped_text`.
