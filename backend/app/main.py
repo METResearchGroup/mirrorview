@@ -94,34 +94,36 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
 @app.post("/feedback/thumb", response_model=AckResponse)
 def submit_thumb_feedback(req: ThumbFeedbackRequest) -> AckResponse:
     try:
-        payload = req.model_dump(mode="json")
-        submission_id = payload["submission"]["id"]
+        submission_id = req.submission.id
+        logger.info(
+            "thumb_feedback submission_id=%s vote=%s voted_at=%s",
+            submission_id,
+            req.vote,
+            req.voted_at.isoformat(),
+        )
+        return AckResponse(ok=True)
     except Exception:
-        logger.exception("Failed to serialize /feedback/thumb request for logging")
-        raise
-
-    logger.info(
-        "thumb_feedback submission_id=%s vote=%s voted_at=%s",
-        submission_id,
-        req.vote,
-        req.voted_at.isoformat(),
-    )
-    return AckResponse(ok=True)
+        logger.exception("Failed to record thumb feedback")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to record your feedback. Please try again.",
+        )
 
 
 @app.post("/feedback/edit", response_model=AckResponse)
 def submit_edit_feedback(req: EditFeedbackRequest) -> AckResponse:
     try:
-        payload = req.model_dump(mode="json")
-        submission_id = payload["submission"]["id"]
+        submission_id = req.submission.id
+        logger.info(
+            "edit_feedback submission_id=%s edited_at=%s edited_text_len=%s",
+            submission_id,
+            req.edited_at.isoformat(),
+            len(req.edited_text),
+        )
+        return AckResponse(ok=True)
     except Exception:
-        logger.exception("Failed to serialize /feedback/edit request for logging")
-        raise
-
-    logger.info(
-        "edit_feedback submission_id=%s edited_at=%s edited_text_len=%s",
-        submission_id,
-        req.edited_at.isoformat(),
-        len(req.edited_text),
-    )
-    return AckResponse(ok=True)
+        logger.exception("Failed to record edit feedback")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to record your feedback. Please try again.",
+        )
