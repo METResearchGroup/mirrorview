@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Loader2, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export default function Home() {
   const [customVersion, setCustomVersion] = React.useState("");
   const [submission, setSubmission] = React.useState<SubmissionContext | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
+  const [isSubmittingThumb, setIsSubmittingThumb] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -127,6 +128,7 @@ export default function Home() {
   }
 
   async function handleThumbUp() {
+    if (isSubmittingThumb) return;
     if (!submission) {
       toast.error("No submission available. Please flip text first.");
       return;
@@ -138,6 +140,7 @@ export default function Home() {
       return;
     }
 
+    setIsSubmittingThumb(true);
     try {
       setFeedback("up");
       const res = await fetch(`${baseUrl}/feedback/thumb`, {
@@ -167,10 +170,13 @@ export default function Home() {
     } catch (e) {
       toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
       setFeedback(null);
+    } finally {
+      setIsSubmittingThumb(false);
     }
   }
 
   async function handleThumbDown() {
+    if (isSubmittingThumb) return;
     if (!submission) {
       toast.error("No submission available. Please flip text first.");
       return;
@@ -182,6 +188,7 @@ export default function Home() {
       return;
     }
 
+    setIsSubmittingThumb(true);
     try {
       setFeedback("down");
       const res = await fetch(`${baseUrl}/feedback/thumb`, {
@@ -214,6 +221,8 @@ export default function Home() {
     } catch (e) {
       toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
       setFeedback(null);
+    } finally {
+      setIsSubmittingThumb(false);
     }
   }
 
@@ -359,8 +368,13 @@ export default function Home() {
                     size="icon"
                     onClick={handleThumbUp}
                     aria-label="Thumbs up"
+                    disabled={isSubmittingThumb}
                   >
-                    <ThumbsUp className="h-4 w-4" />
+                    {isSubmittingThumb ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ThumbsUp className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -368,8 +382,13 @@ export default function Home() {
                     size="icon"
                     onClick={handleThumbDown}
                     aria-label="Thumbs down"
+                    disabled={isSubmittingThumb}
                   >
-                    <ThumbsDown className="h-4 w-4" />
+                    {isSubmittingThumb ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ThumbsDown className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 <div className="text-sm text-muted-foreground">
