@@ -57,7 +57,7 @@ export default function Home() {
 
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
     if (!baseUrl) {
-      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      toast.error("Service is not configured. Please try again later.");
       return;
     }
 
@@ -90,7 +90,7 @@ export default function Home() {
 
       const data = (await res.json()) as FlipApiResponse;
       if (!data?.flipped_text) {
-        toast.error("Backend returned no flipped_text.");
+        toast.error("No result was returned. Please try again.");
         return;
       }
 
@@ -107,7 +107,7 @@ export default function Home() {
       setFeedback(null);
       setCustomVersion("");
     } catch (e) {
-      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsFlipping(false);
     }
@@ -136,7 +136,7 @@ export default function Home() {
 
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
     if (!baseUrl) {
-      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      toast.error("Service is not configured. Please try again later.");
       return;
     }
 
@@ -168,7 +168,7 @@ export default function Home() {
 
       toast.success("Thanks — feedback recorded.");
     } catch (e) {
-      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      toast.error("Something went wrong. Please try again.");
       setFeedback(null);
     } finally {
       setIsSubmittingThumb(false);
@@ -184,7 +184,7 @@ export default function Home() {
 
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
     if (!baseUrl) {
-      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      toast.error("Service is not configured. Please try again later.");
       return;
     }
 
@@ -219,7 +219,7 @@ export default function Home() {
       // Defer focus until the textarea exists in the DOM.
       queueMicrotask(() => customTextareaRef.current?.focus());
     } catch (e) {
-      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      toast.error("Something went wrong. Please try again.");
       setFeedback(null);
     } finally {
       setIsSubmittingThumb(false);
@@ -240,7 +240,7 @@ export default function Home() {
 
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
     if (!baseUrl) {
-      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      toast.error("Service is not configured. Please try again later.");
       return;
     }
 
@@ -269,7 +269,7 @@ export default function Home() {
 
       toast.success("Your version has been submitted.");
     } catch (e) {
-      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      toast.error("Something went wrong. Please try again.");
     }
   }
 
@@ -294,12 +294,10 @@ export default function Home() {
             )}
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Flip a post (prototype)
+            Flip a post
           </h1>
           <p className="text-base leading-7 text-muted-foreground">
-            Paste a post and we’ll generate a flipped version. This is{" "}
-            <span className="font-medium text-foreground">powered by the backend</span>{" "}
-            (configure <span className="font-mono">NEXT_PUBLIC_API_URL</span>).
+            Paste a post and we’ll generate a flipped version.
           </p>
         </header>
 
@@ -322,13 +320,10 @@ export default function Home() {
               className="min-h-36 resize-y"
             />
           </CardContent>
-          <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardFooter>
             <Button onClick={handleFlip} disabled={!canFlip || isFlipping}>
               {isFlipping ? "Flipping…" : "Flip"}
             </Button>
-            <div className="text-sm text-muted-foreground">
-              Calls <span className="font-mono">POST /generate_response</span>.
-            </div>
           </CardFooter>
         </Card>
 
@@ -421,7 +416,7 @@ export default function Home() {
                     className="min-h-32 resize-y"
                   />
                 </CardContent>
-                <CardFooter className="flex items-center justify-between">
+                <CardFooter>
                   <Button
                     type="button"
                     onClick={handleSubmitCustom}
@@ -429,9 +424,6 @@ export default function Home() {
                   >
                     Submit
                   </Button>
-                  <div className="text-sm text-muted-foreground">
-                    Calls <span className="font-mono">POST /feedback/edit</span>.
-                  </div>
                 </CardFooter>
               </Card>
             )}
