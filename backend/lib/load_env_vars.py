@@ -37,6 +37,8 @@ class EnvVarsContainer:
         self._env_var_types: dict[str, type] = {
             # Execution/config
             "RUN_MODE": str,
+            "DATABASE_URL": str,
+            "PERSISTENCE_ENABLED": str,
             "BSKY_DATA_DIR": str,
             # Bluesky credentials
             "BLUESKY_HANDLE": str,
@@ -162,12 +164,19 @@ class EnvVarsContainer:
             data_dir = os.path.expanduser("~/tmp/")
             self._env_vars["BSKY_DATA_DIR"] = data_dir
             os.makedirs(data_dir, exist_ok=True)
+
+            # Default tests to DB-disabled, but allow opt-in integration tests.
+            self._env_vars["PERSISTENCE_ENABLED"] = os.getenv("PERSISTENCE_ENABLED", "false")
+            self._env_vars["DATABASE_URL"] = os.getenv("DATABASE_URL", "")
         else:
             self._env_vars["BLUESKY_HANDLE"] = os.getenv("BLUESKY_HANDLE")
             self._env_vars["BLUESKY_PASSWORD"] = os.getenv("BLUESKY_PASSWORD")
             self._env_vars["DEV_BLUESKY_HANDLE"] = os.getenv("DEV_BLUESKY_HANDLE")
             self._env_vars["DEV_BLUESKY_PASSWORD"] = os.getenv("DEV_BLUESKY_PASSWORD")
             self._env_vars["BSKY_DATA_DIR"] = os.getenv("BSKY_DATA_DIR")
+
+            self._env_vars["PERSISTENCE_ENABLED"] = os.getenv("PERSISTENCE_ENABLED", "true")
+            self._env_vars["DATABASE_URL"] = os.getenv("DATABASE_URL")
 
         # Prod-only secret loading for Bluesky creds.
         if run_mode == "prod" and (

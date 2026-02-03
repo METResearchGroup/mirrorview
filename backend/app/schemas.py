@@ -28,9 +28,9 @@ class EditFeedbackRequest(BaseModel):
 
 class GenerateResponseRequest(BaseModel):
     text: str = Field(..., min_length=1, description="A social media post to flip.")
-    submission: SubmissionContext | None = Field(
-        default=None,
-        description="Optional submission metadata generated client-side at flip time.",
+    submission: SubmissionContext = Field(
+        ...,
+        description="Submission metadata generated client-side at flip time.",
     )
 
 
