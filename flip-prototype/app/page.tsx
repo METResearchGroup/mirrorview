@@ -126,35 +126,142 @@ export default function Home() {
     setIsExplanationOpen(e.currentTarget.open);
   }
 
-  function handleThumbUp() {
-    setFeedback("up");
-    toast.success("Thanks — feedback recorded (mock).");
+  async function handleThumbUp() {
+    if (!submission) {
+      toast.error("No submission available. Please flip text first.");
+      return;
+    }
+
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    try {
+      setFeedback("up");
+      const res = await fetch(`${baseUrl}/feedback/thumb`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission,
+          vote: "up",
+          voted_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        setFeedback(null);
+        return;
+      }
+
+      toast.success("Thanks — feedback recorded.");
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      setFeedback(null);
+    }
   }
 
-  function handleThumbDown() {
-    setFeedback("down");
-    toast("Got it. Write your preferred version below.");
+  async function handleThumbDown() {
+    if (!submission) {
+      toast.error("No submission available. Please flip text first.");
+      return;
+    }
 
-    // Defer focus until the textarea exists in the DOM.
-    queueMicrotask(() => customTextareaRef.current?.focus());
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    try {
+      setFeedback("down");
+      const res = await fetch(`${baseUrl}/feedback/thumb`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission,
+          vote: "down",
+          voted_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        setFeedback(null);
+        return;
+      }
+
+      toast("Got it. Write your preferred version below.");
+
+      // Defer focus until the textarea exists in the DOM.
+      queueMicrotask(() => customTextareaRef.current?.focus());
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+      setFeedback(null);
+    }
   }
 
-  function handleSubmitCustom() {
+  async function handleSubmitCustom() {
     const trimmed = customVersion.trim();
     if (!trimmed) {
       toast.error("Please write your version before submitting.");
       return;
     }
 
-    // Frontend-only prototype: no network call.
-    console.log("Custom version submitted (mock):", {
-      submission,
-      inputText,
-      flippedText,
-      customVersion: trimmed,
-    });
+    if (!submission) {
+      toast.error("No submission available. Please flip text first.");
+      return;
+    }
 
-    toast.success("Submitted (mock).");
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    if (!baseUrl) {
+      toast.error("Missing NEXT_PUBLIC_API_URL. Set it to your backend URL.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${baseUrl}/feedback/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission,
+          edited_text: trimmed,
+          edited_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`;
+        try {
+          const data = (await res.json()) as { detail?: string };
+          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
+        } catch {
+          // ignore json parse errors
+        }
+        toast.error(detail);
+        return;
+      }
+
+      toast.success("Your version has been submitted.");
+    } catch (e) {
+      toast.error(`Failed to reach backend: ${(e as Error).message ?? String(e)}`);
+    }
   }
 
   return (
@@ -304,7 +411,7 @@ export default function Home() {
                     Submit
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Stored nowhere (mock).
+                    Calls <span className="font-mono">POST /feedback/edit</span>.
                   </div>
                 </CardFooter>
               </Card>
