@@ -49,7 +49,13 @@ def generate_response(req: GenerateResponseRequest) -> FlipResponse:
         logger.exception("Failed to serialize /generate_response request for logging")
         raise
 
-    logger.info("generate_response request submission_id=%s payload=%s", submission_id, payload)
+    text_len = len(req.text) if isinstance(req.text, str) else None
+    logger.info(
+        "generate_response request submission_id=%s text_len=%s has_submission=%s",
+        submission_id,
+        text_len,
+        req.submission is not None,
+    )
 
     # LiteLLM expects messages as list[dict] with role/content.
     messages: list[dict[str, Any]] = [
