@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from testcontainers.postgres import PostgresContainer
+from docker.errors import DockerException
 
 
 def _run_migrations(database_url: str) -> None:
@@ -39,89 +40,92 @@ class TestPersistenceIntegration:
     def test_generate_and_feedback_persist_rows(self, monkeypatch):
         """POST endpoints persist expected rows to Postgres."""
         # Arrange
-        with PostgresContainer("postgres:16-alpine") as pg:
-            sync_url = pg.get_connection_url()
-            database_url = (
-                sync_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
-                .replace("postgresql://", "postgresql+asyncpg://")
-                .replace("postgres://", "postgresql+asyncpg://")
-            )
+        try:
+            with PostgresContainer("postgres:16-alpine") as pg:
+                sync_url = pg.get_connection_url()
+                database_url = (
+                    sync_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+                    .replace("postgresql://", "postgresql+asyncpg://")
+                    .replace("postgres://", "postgresql+asyncpg://")
+                )
 
-            monkeypatch.setenv("RUN_MODE", "test")
-            monkeypatch.setenv("PERSISTENCE_ENABLED", "true")
-            monkeypatch.setenv("DATABASE_URL", database_url)
+                monkeypatch.setenv("RUN_MODE", "test")
+                monkeypatch.setenv("PERSISTENCE_ENABLED", "true")
+                monkeypatch.setenv("DATABASE_URL", database_url)
 
-            from lib.load_env_vars import EnvVarsContainer
+                from lib.load_env_vars import EnvVarsContainer
 
-            EnvVarsContainer._instance = None  # noqa: SLF001 (test-only reset)
+                EnvVarsContainer._instance = None  # noqa: SLF001 (test-only reset)
 
-            _run_migrations(database_url)
+                _run_migrations(database_url)
 
-            import app.di.providers as providers
-            import app.main as main
+                import app.di.providers as providers
+                import app.main as main
 
-            importlib.reload(providers)
-            importlib.reload(main)
+                importlib.reload(providers)
+                importlib.reload(main)
 
-            class _FakeLLM:
-                def structured_completion(self, messages, response_model, model=None):
-                    return response_model(flipped_text="hello (flipped)", explanation="because")
+                class _FakeLLM:
+                    def structured_completion(self, messages, response_model, model=None):
+                        return response_model(flipped_text="hello (flipped)", explanation="because")
 
-            monkeypatch.setattr(providers, "get_llm_client", lambda: _FakeLLM())
+                monkeypatch.setattr(providers, "get_llm_client", lambda: _FakeLLM())
 
-            submission_id = str(uuid.uuid4())
-            payload = {
-                "text": "hello",
-                "submission": {
-                    "id": submission_id,
-                    "created_at": "2026-02-03T00:00:00.000Z",
-                    "input_text": "hello",
-                },
-            }
-
-            # Act
-            with TestClient(main.app) as client:
-                res = client.post("/generate_response", json=payload)
-                assert res.status_code == 200
-
-                res2 = client.post(
-                    "/feedback/thumb",
-                    json={
-                        "submission": payload["submission"],
-                        "vote": "up",
-                        "voted_at": "2026-02-03T00:00:01.000Z",
+                submission_id = str(uuid.uuid4())
+                payload = {
+                    "text": "hello",
+                    "submission": {
+                        "id": submission_id,
+                        "created_at": "2026-02-03T00:00:00.000Z",
+                        "input_text": "hello",
                     },
-                )
-                assert res2.status_code == 200
+                }
 
-            # Assert
-            submissions_row = asyncio.run(
-                _fetch_one(
-                    database_url,
-                    "select count(*) from submissions where id = :id",
-                    {"id": submission_id},
-                )
-            )
-            expected_submissions = 1
-            assert submissions_row[0] == expected_submissions
+                # Act
+                with TestClient(main.app) as client:
+                    res = client.post("/generate_response", json=payload)
+                    assert res.status_code == 200
 
-            generations_row = asyncio.run(
-                _fetch_one(
-                    database_url,
-                    "select count(*) from generations where submission_id = :id",
-                    {"id": submission_id},
-                )
-            )
-            expected_generations = 1
-            assert generations_row[0] == expected_generations
+                    res2 = client.post(
+                        "/feedback/thumb",
+                        json={
+                            "submission": payload["submission"],
+                            "vote": "up",
+                            "voted_at": "2026-02-03T00:00:01.000Z",
+                        },
+                    )
+                    assert res2.status_code == 200
 
-            thumbs_row = asyncio.run(
-                _fetch_one(
-                    database_url,
-                    "select count(*) from thumb_feedback_events where submission_id = :id",
-                    {"id": submission_id},
+                # Assert
+                submissions_row = asyncio.run(
+                    _fetch_one(
+                        database_url,
+                        "select count(*) from submissions where id = :id",
+                        {"id": submission_id},
+                    )
                 )
-            )
-            expected_thumbs = 1
-            assert thumbs_row[0] == expected_thumbs
+                expected_submissions = 1
+                assert submissions_row[0] == expected_submissions
+
+                generations_row = asyncio.run(
+                    _fetch_one(
+                        database_url,
+                        "select count(*) from generations where submission_id = :id",
+                        {"id": submission_id},
+                    )
+                )
+                expected_generations = 1
+                assert generations_row[0] == expected_generations
+
+                thumbs_row = asyncio.run(
+                    _fetch_one(
+                        database_url,
+                        "select count(*) from thumb_feedback_events where submission_id = :id",
+                        {"id": submission_id},
+                    )
+                )
+                expected_thumbs = 1
+                assert thumbs_row[0] == expected_thumbs
+        except (DockerException, FileNotFoundError) as e:
+            pytest.skip(f"Docker not available for integration test: {e}")
 

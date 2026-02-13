@@ -12,8 +12,13 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
 def is_persistence_enabled() -> bool:
-    raw = str(EnvVarsContainer.get_env_var("PERSISTENCE_ENABLED")).strip()
-    return bool(raw)
+    """Return whether DB persistence is enabled via env config.
+
+    Accepts common truthy values (case-insensitive): 1, true, t, yes, y, on.
+    All other values (including empty / unset) are treated as false.
+    """
+    raw = str(EnvVarsContainer.get_env_var("PERSISTENCE_ENABLED") or "").strip().lower()
+    return raw in {"1", "true", "t", "yes", "y", "on"}
 
 
 def init_engine(database_url: str) -> None:
