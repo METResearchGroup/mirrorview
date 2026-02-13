@@ -12,13 +12,8 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
 def is_persistence_enabled() -> bool:
-    raw = str(EnvVarsContainer.get_env_var("PERSISTENCE_ENABLED")).strip().lower()
-    if raw in {"1", "true", "yes", "y", "on"}:
-        return True
-    if raw in {"0", "false", "no", "n", "off"}:
-        return False
-    # Fail closed if misconfigured.
-    return False
+    raw = str(EnvVarsContainer.get_env_var("PERSISTENCE_ENABLED")).strip()
+    return bool(raw)
 
 
 def init_engine(database_url: str) -> None:
