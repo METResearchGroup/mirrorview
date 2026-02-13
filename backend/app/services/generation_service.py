@@ -8,6 +8,7 @@ import anyio
 from app.db.uow import UnitOfWork
 from app.db.repos.interfaces import GenerationRepo, SubmissionRepo
 from app.schemas import FlipResponse, GenerateResponseRequest
+from fastapi import HTTPException
 
 
 class LLMClient(Protocol):
