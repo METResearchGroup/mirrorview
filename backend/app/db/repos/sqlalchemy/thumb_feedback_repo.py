@@ -6,9 +6,10 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import ThumbFeedbackEvent
+from app.db.repos.interfaces import ThumbFeedbackRepo
 
 
-class SqlAlchemyThumbFeedbackRepo:
+class SqlAlchemyThumbFeedbackRepo(ThumbFeedbackRepo):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

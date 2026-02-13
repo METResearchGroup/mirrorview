@@ -6,9 +6,10 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import EditFeedbackEvent
+from app.db.repos.interfaces import EditFeedbackRepo
 
 
-class SqlAlchemyEditFeedbackRepo:
+class SqlAlchemyEditFeedbackRepo(EditFeedbackRepo):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

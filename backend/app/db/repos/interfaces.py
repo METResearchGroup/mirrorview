@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import uuid
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Protocol
 
 from app.schemas import FlipResponse, SubmissionContext
 
 
-class SubmissionRepo(Protocol):
+class SubmissionRepo(ABC):
+    @abstractmethod
     async def upsert(self, submission: SubmissionContext) -> None:
         """Insert or update a submission row (idempotent by submission.id)."""
 
 
-class GenerationRepo(Protocol):
+class GenerationRepo(ABC):
+    @abstractmethod
     async def add(
         self,
         *,
@@ -28,7 +30,8 @@ class GenerationRepo(Protocol):
         """Insert a generation row and return its ID."""
 
 
-class ThumbFeedbackRepo(Protocol):
+class ThumbFeedbackRepo(ABC):
+    @abstractmethod
     async def add(
         self,
         *,
@@ -40,7 +43,8 @@ class ThumbFeedbackRepo(Protocol):
         """Insert a thumb feedback event row."""
 
 
-class EditFeedbackRepo(Protocol):
+class EditFeedbackRepo(ABC):
+    @abstractmethod
     async def add(
         self,
         *,

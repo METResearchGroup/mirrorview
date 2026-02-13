@@ -4,10 +4,11 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Submission
+from app.db.repos.interfaces import SubmissionRepo
 from app.schemas import SubmissionContext
 
 
-class SqlAlchemySubmissionRepo:
+class SqlAlchemySubmissionRepo(SubmissionRepo):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

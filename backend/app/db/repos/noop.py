@@ -3,15 +3,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
 from app.schemas import FlipResponse, SubmissionContext
 
 
-class NoopSubmissionRepo:
+class NoopSubmissionRepo(SubmissionRepo):
     async def upsert(self, submission: SubmissionContext) -> None:  # noqa: ARG002
         return
 
 
-class NoopGenerationRepo:
+class NoopGenerationRepo(GenerationRepo):
     async def add(  # noqa: PLR0913
         self,
         *,
@@ -27,7 +28,7 @@ class NoopGenerationRepo:
         return uuid.UUID(int=0)
 
 
-class NoopThumbFeedbackRepo:
+class NoopThumbFeedbackRepo(ThumbFeedbackRepo):
     async def add(  # noqa: ARG002
         self,
         *,
@@ -39,7 +40,7 @@ class NoopThumbFeedbackRepo:
         return
 
 
-class NoopEditFeedbackRepo:
+class NoopEditFeedbackRepo(EditFeedbackRepo):
     async def add(  # noqa: ARG002
         self,
         *,

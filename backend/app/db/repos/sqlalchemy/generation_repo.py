@@ -5,10 +5,11 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Generation
+from app.db.repos.interfaces import GenerationRepo
 from app.schemas import FlipResponse
 
 
-class SqlAlchemyGenerationRepo:
+class SqlAlchemyGenerationRepo(GenerationRepo):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

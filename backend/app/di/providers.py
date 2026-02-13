@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import Any
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
 from app.db.repos.noop import (
     NoopEditFeedbackRepo,
     NoopGenerationRepo,
@@ -47,25 +47,25 @@ def get_unit_of_work(session: AsyncSession | None = Depends(get_maybe_session)) 
     return SqlAlchemyUnitOfWork(session)
 
 
-def get_submission_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> Any:
+def get_submission_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> SubmissionRepo:
     if session is None:
         return NoopSubmissionRepo()
     return SqlAlchemySubmissionRepo(session)
 
 
-def get_generation_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> Any:
+def get_generation_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> GenerationRepo:
     if session is None:
         return NoopGenerationRepo()
     return SqlAlchemyGenerationRepo(session)
 
 
-def get_thumb_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> Any:
+def get_thumb_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> ThumbFeedbackRepo:
     if session is None:
         return NoopThumbFeedbackRepo()
     return SqlAlchemyThumbFeedbackRepo(session)
 
 
-def get_edit_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> Any:
+def get_edit_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> EditFeedbackRepo:
     if session is None:
         return NoopEditFeedbackRepo()
     return SqlAlchemyEditFeedbackRepo(session)
