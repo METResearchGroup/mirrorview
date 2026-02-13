@@ -38,13 +38,19 @@ class GenerationService:
         submission = req.submission
 
         start = time.monotonic()
-        flip: FlipResponse = await anyio.to_thread.run_sync(
-            lambda: self._llm.structured_completion(
-                messages=messages,
-                response_model=FlipResponse,
-                model=None,
-            )
-        )
+        timeout_s = 30
+        try:
+            with anyio.fail_after(timeout_s):
+                flip: FlipResponse = await anyio.to_thread.run_sync(
+                    lambda: self._llm.structured_completion(
+                        messages=messages,
+                        response_model=FlipResponse,
+                        model=None,
+                    ),
+                    abandon_on_cancel=True,
+                )
+        except TimeoutError as e:
+            raise HTTPException(status_code=504, detail="LLM request timed out") from e
         latency_ms = int((time.monotonic() - start) * 1000)
 
         async with self._uow.transaction():
