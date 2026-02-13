@@ -1,3 +1,12 @@
+"""Submission model: one user submission (input text) and its metadata.
+
+A Submission represents a single user request to "flip" text—e.g. from formal
+to casual or vice versa. It stores the original input_text, client-side
+timestamp (client_created_at), server receipt time, and optional client_metadata
+(JSON). All generations and feedback events (thumbs, edits) are linked to a
+submission via submission_id. Stored for analytics, debugging, and linking
+feedback back to the original request.
+"""
 from __future__ import annotations
 
 import datetime as dt

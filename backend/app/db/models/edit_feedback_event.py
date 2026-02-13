@@ -1,3 +1,10 @@
+"""EditFeedbackEvent model: record when a user edits the AI-generated text.
+
+Each row represents one edit event: the user changed the flipped output to
+edited_text at edited_at. Optionally linked to a specific generation_id (SET NULL
+if that generation is deleted). Stored to analyze how often and how users correct
+the model output, which supports prompt/model improvement and quality metrics.
+"""
 from __future__ import annotations
 
 import datetime as dt

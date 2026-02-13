@@ -1,3 +1,12 @@
+"""Generation model: one AI-generated flip (output text + explanation) per submission.
+
+A Generation stores the result of a single model run for a submission: the
+flipped_text, explanation, and optional provider/model/prompt/version, latency_ms,
+and usage (token counts). Multiple generations can exist per submission (e.g.
+retries or A/B tests). Stored for serving responses, cost/latency analysis,
+and linking thumbs-up/down and edit feedback to the specific output that was
+shown to the user.
+"""
 from __future__ import annotations
 
 import datetime as dt
