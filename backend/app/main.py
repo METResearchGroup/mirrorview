@@ -1,29 +1,15 @@
 import logging
 import os
-from typing import Any
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.schemas import (
-    AckResponse,
-    EditFeedbackRequest,
-    FlipResponse,
-    GenerateResponseRequest,
-    ThumbFeedbackRequest,
-)
-from ml_tooling.llm.exceptions import LLMAuthError, LLMInvalidRequestError, LLMTransientError
-from prompts import FLIP_PROMPT
+from app.api.routers import feedback_router, generate_router
+from app.db.session import dispose_engine, init_engine, is_persistence_enabled
+from lib.load_env_vars import EnvVarsContainer
 
 logger = logging.getLogger(__name__)
-
-
-def get_llm_service():
-    # Lazy import so unit tests (and feedback-only usage) don't require LLM deps.
-    from ml_tooling.llm.llm_service import get_llm_service as _get_llm_service
-
-    return _get_llm_service()
-
 
 def _parse_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "")
@@ -34,7 +20,18 @@ def _parse_cors_origins() -> list[str]:
     return origins
 
 
-app = FastAPI(title="MirrorView Backend", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    if is_persistence_enabled():
+        database_url = EnvVarsContainer.get_env_var("DATABASE_URL", required=True)
+        init_engine(database_url)
+    try:
+        yield
+    finally:
+        await dispose_engine()
+
+
+app = FastAPI(title="MirrorView Backend", version="0.2.0", lifespan=lifespan)
 
 allow_origins = _parse_cors_origins()
 app.add_middleware(
@@ -50,80 +47,5 @@ app.add_middleware(
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
-
-@app.post("/generate_response", response_model=FlipResponse)
-def generate_response(req: GenerateResponseRequest) -> FlipResponse:
-    try:
-        payload = req.model_dump(mode="json")
-        submission_id = payload["submission"]["id"] if req.submission is not None else None
-    except Exception:
-        logger.exception("Failed to serialize /generate_response request for logging")
-        raise
-
-    text_len = len(req.text) if isinstance(req.text, str) else None
-    logger.info(
-        "generate_response request submission_id=%s text_len=%s has_submission=%s",
-        submission_id,
-        text_len,
-        req.submission is not None,
-    )
-
-    messages: list[dict[str, Any]] = [
-        {"role": "system", "content": FLIP_PROMPT},
-        {"role": "user", "content": req.text},
-    ]
-
-    llm = get_llm_service()
-    try:
-        return llm.structured_completion(
-            messages=messages,
-            response_model=FlipResponse,
-            model=None,  # Use default from models.yaml
-        )
-    except (LLMAuthError,) as e:
-        raise HTTPException(status_code=401, detail=str(e)) from e
-    except (LLMInvalidRequestError,) as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except (LLMTransientError,) as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
-    except Exception as e:
-        # Catch-all: keep response bounded but still report something actionable.
-        raise HTTPException(status_code=500, detail=f"Unhandled error: {type(e).__name__}: {e}") from e
-
-
-@app.post("/feedback/thumb", response_model=AckResponse)
-def submit_thumb_feedback(req: ThumbFeedbackRequest) -> AckResponse:
-    try:
-        submission_id = req.submission.id
-        logger.info(
-            "thumb_feedback submission_id=%s vote=%s voted_at=%s",
-            submission_id,
-            req.vote,
-            req.voted_at.isoformat(),
-        )
-        return AckResponse(ok=True)
-    except Exception:
-        logger.exception("Failed to record thumb feedback")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to record your feedback. Please try again.",
-        )
-
-
-@app.post("/feedback/edit", response_model=AckResponse)
-def submit_edit_feedback(req: EditFeedbackRequest) -> AckResponse:
-    try:
-        submission_id = req.submission.id
-        logger.info(
-            "edit_feedback submission_id=%s edited_at=%s edited_text_len=%s",
-            submission_id,
-            req.edited_at.isoformat(),
-            len(req.edited_text),
-        )
-        return AckResponse(ok=True)
-    except Exception:
-        logger.exception("Failed to record edit feedback")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to record your feedback. Please try again.",
-        )
+app.include_router(generate_router)
+app.include_router(feedback_router)

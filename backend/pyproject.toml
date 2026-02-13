@@ -8,6 +8,9 @@ dependencies = [
   "uvicorn[standard]",
   "pydantic",
   "python-dotenv",
+  "sqlalchemy[asyncio]",
+  "asyncpg",
+  "alembic",
   "litellm",
   "openai",
   "tenacity",
@@ -19,7 +22,11 @@ dependencies = [
 dev = [
   "ruff",
   "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
   "httpx",
+  "testcontainers",
 ]
 
 [tool.ruff]
