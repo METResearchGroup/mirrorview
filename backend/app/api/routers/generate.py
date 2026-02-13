@@ -44,5 +44,6 @@ async def generate_response(
     except (LLMTransientError,) as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unhandled error: {type(e).__name__}: {e}") from e
+        logger.exception("Unhandled generate_response failure submission_id=%s", submission_id)
+        raise HTTPException(status_code=500, detail="Internal server error.") from e
 

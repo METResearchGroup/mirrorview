@@ -7,7 +7,12 @@ from pydantic import BaseModel, Field
 class SubmissionContext(BaseModel):
     id: UUID = Field(..., description="Client-generated UUID correlating feedback calls.")
     created_at: datetime = Field(..., description="ISO-8601 UTC timestamp of submission creation.")
-    input_text: str = Field(..., min_length=1, description="Original user text at flip time.")
+    input_text: str = Field(
+        ...,
+        min_length=1,
+        max_length=4000,
+        description="Original user text at flip time.",
+    )
 
 
 class AckResponse(BaseModel):
@@ -22,12 +27,17 @@ class ThumbFeedbackRequest(BaseModel):
 
 class EditFeedbackRequest(BaseModel):
     submission: SubmissionContext = Field(..., description="Submission metadata generated client-side.")
-    edited_text: str = Field(..., min_length=1, description="User's preferred version of the flipped text.")
+    edited_text: str = Field(
+        ...,
+        min_length=1,
+        max_length=4000,
+        description="User's preferred version of the flipped text.",
+    )
     edited_at: datetime = Field(..., description="ISO-8601 UTC timestamp of when edit was submitted.")
 
 
 class GenerateResponseRequest(BaseModel):
-    text: str = Field(..., min_length=1, description="A social media post to flip.")
+    text: str = Field(..., min_length=1, max_length=4000, description="A social media post to flip.")
     submission: SubmissionContext = Field(
         ...,
         description="Submission metadata generated client-side at flip time.",
