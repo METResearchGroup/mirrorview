@@ -22,6 +22,7 @@ type SubmissionContext = {
   id: string;
   created_at: string;
   input_text: string;
+  model_id: string;
 };
 
 type FlipApiResponse = {
@@ -29,7 +30,37 @@ type FlipApiResponse = {
   explanation?: string;
 };
 
+type ModelOption = {
+  model_id: string;
+  display_name: string;
+  provider: string;
+};
+
+type ModelCatalogResponse = {
+  default_model_id: string;
+  models: ModelOption[];
+};
+
 const EXPLANATION_COLLAPSE_THRESHOLD_CHARS = 400;
+const FALLBACK_MODEL_ID = "gpt-5-nano";
+
+async function extractErrorMessage(res: Response, fallbackStatus: number): Promise<string> {
+  let detail = `Request failed (${fallbackStatus})`;
+  try {
+    const data = (await res.json()) as {
+      detail?: string;
+      error?: { message?: string };
+    };
+    if (typeof data?.error?.message === "string" && data.error.message.trim()) {
+      detail = data.error.message;
+    } else if (typeof data?.detail === "string" && data.detail.trim()) {
+      detail = data.detail;
+    }
+  } catch {
+    // ignore json parse errors
+  }
+  return detail;
+}
 
 export default function Home() {
   const [inputText, setInputText] = React.useState("");
@@ -41,12 +72,45 @@ export default function Home() {
   const [submission, setSubmission] = React.useState<SubmissionContext | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
   const [isSubmittingThumb, setIsSubmittingThumb] = React.useState(false);
+  const [modelOptions, setModelOptions] = React.useState<ModelOption[]>([]);
+  const [selectedModelId, setSelectedModelId] = React.useState(FALLBACK_MODEL_ID);
+  const [isLoadingModels, setIsLoadingModels] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const canFlip = inputText.trim().length > 0;
   const canReset = inputText.trim() !== "" || flippedText !== null || explanation !== null;
   const showCustomVersion = feedback === "down";
+  const getBaseUrl = React.useCallback(
+    () => (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, ""),
+    [],
+  );
+
+  React.useEffect(() => {
+    async function loadModels() {
+      const baseUrl = getBaseUrl();
+      if (!baseUrl) return;
+
+      setIsLoadingModels(true);
+      try {
+        const res = await fetch(`${baseUrl}/models`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as ModelCatalogResponse;
+        if (!Array.isArray(data.models) || data.models.length === 0) return;
+        setModelOptions(data.models);
+        setSelectedModelId(data.default_model_id || FALLBACK_MODEL_ID);
+      } catch {
+        // fallback model remains available even if catalog fetch fails
+      } finally {
+        setIsLoadingModels(false);
+      }
+    }
+
+    loadModels();
+  }, [getBaseUrl]);
 
   async function handleFlip() {
     const trimmed = inputText.trim();
@@ -55,7 +119,7 @@ export default function Home() {
       return;
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    const baseUrl = getBaseUrl();
     if (!baseUrl) {
       toast.error("Service is not configured. Please try again later.");
       return;
@@ -67,6 +131,7 @@ export default function Home() {
         id: crypto.randomUUID(),
         created_at: new Date().toISOString(),
         input_text: trimmed,
+        model_id: selectedModelId,
       };
       setSubmission(nextSubmission);
 
@@ -77,14 +142,7 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        let detail = `Request failed (${res.status})`;
-        try {
-          const data = (await res.json()) as { detail?: string };
-          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
-        } catch {
-          // ignore json parse errors
-        }
-        toast.error(detail);
+        toast.error(await extractErrorMessage(res, res.status));
         return;
       }
 
@@ -106,7 +164,7 @@ export default function Home() {
       );
       setFeedback(null);
       setCustomVersion("");
-    } catch (e) {
+    } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsFlipping(false);
@@ -134,7 +192,7 @@ export default function Home() {
       return;
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    const baseUrl = getBaseUrl();
     if (!baseUrl) {
       toast.error("Service is not configured. Please try again later.");
       return;
@@ -154,20 +212,13 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        let detail = `Request failed (${res.status})`;
-        try {
-          const data = (await res.json()) as { detail?: string };
-          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
-        } catch {
-          // ignore json parse errors
-        }
-        toast.error(detail);
+        toast.error(await extractErrorMessage(res, res.status));
         setFeedback(null);
         return;
       }
 
       toast.success("Thanks — feedback recorded.");
-    } catch (e) {
+    } catch {
       toast.error("Something went wrong. Please try again.");
       setFeedback(null);
     } finally {
@@ -182,7 +233,7 @@ export default function Home() {
       return;
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    const baseUrl = getBaseUrl();
     if (!baseUrl) {
       toast.error("Service is not configured. Please try again later.");
       return;
@@ -202,14 +253,7 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        let detail = `Request failed (${res.status})`;
-        try {
-          const data = (await res.json()) as { detail?: string };
-          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
-        } catch {
-          // ignore json parse errors
-        }
-        toast.error(detail);
+        toast.error(await extractErrorMessage(res, res.status));
         setFeedback(null);
         return;
       }
@@ -218,7 +262,7 @@ export default function Home() {
 
       // Defer focus until the textarea exists in the DOM.
       queueMicrotask(() => customTextareaRef.current?.focus());
-    } catch (e) {
+    } catch {
       toast.error("Something went wrong. Please try again.");
       setFeedback(null);
     } finally {
@@ -238,7 +282,7 @@ export default function Home() {
       return;
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+    const baseUrl = getBaseUrl();
     if (!baseUrl) {
       toast.error("Service is not configured. Please try again later.");
       return;
@@ -256,19 +300,12 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        let detail = `Request failed (${res.status})`;
-        try {
-          const data = (await res.json()) as { detail?: string };
-          if (typeof data?.detail === "string" && data.detail.trim()) detail = data.detail;
-        } catch {
-          // ignore json parse errors
-        }
-        toast.error(detail);
+        toast.error(await extractErrorMessage(res, res.status));
         return;
       }
 
       toast.success("Your version has been submitted.");
-    } catch (e) {
+    } catch {
       toast.error("Something went wrong. Please try again.");
     }
   }
@@ -312,6 +349,26 @@ export default function Home() {
             <Label htmlFor="inputText" className="sr-only">
               Text to flip
             </Label>
+            <div className="space-y-2">
+              <Label htmlFor="modelSelect">Model</Label>
+              <select
+                id="modelSelect"
+                value={selectedModelId}
+                onChange={(e) => setSelectedModelId(e.target.value)}
+                className="h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                disabled={isFlipping || isLoadingModels}
+              >
+                {modelOptions.length === 0 ? (
+                  <option value={FALLBACK_MODEL_ID}>{FALLBACK_MODEL_ID}</option>
+                ) : (
+                  modelOptions.map((model) => (
+                    <option key={model.model_id} value={model.model_id}>
+                      {model.display_name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
             <Textarea
               id="inputText"
               value={inputText}
