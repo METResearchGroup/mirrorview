@@ -139,6 +139,36 @@ CSP_REPORT_ONLY=true
 - Integration: validation failures return standardized envelope.
 - Security smoke test: required response headers present on `/health` and write endpoints.
 
+## Model selection
+
+The backend exposes a model catalog and accepts a selected model per submission.
+
+- `GET /models` returns:
+  - `default_model_id`
+  - `models[]` with `{ model_id, display_name, provider }`
+- `POST /generate_response` expects `submission.model_id` and validates it against
+  the available model catalog.
+
+### Model config and availability
+
+- Source of truth: `backend/ml_tooling/llm/config/models.yaml`
+- `models.default.default_model` controls default selection (currently `gpt-5-nano`)
+- Each configured model has:
+  - `litellm_route` (provider runtime route)
+  - `available` (whether UI/API should expose/accept it)
+
+### Provider credentials
+
+Set keys for any provider you enable:
+
+```bash
+OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+OPENROUTER_API_KEY=...
+GOOGLE_AI_STUDIO_KEY=...
+GROQ_API_KEY=...
+```
+
 ## Railway deployment
 
 - Create a Railway project pointing at this repo.

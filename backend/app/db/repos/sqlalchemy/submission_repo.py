@@ -17,6 +17,7 @@ class SqlAlchemySubmissionRepo(SubmissionRepo):
             id=submission.id,
             client_created_at=submission.created_at,
             input_text=submission.input_text,
+            selected_model_id=submission.model_id,
             client_metadata=None,
         )
 
@@ -27,6 +28,7 @@ class SqlAlchemySubmissionRepo(SubmissionRepo):
             set_={
                 "client_created_at": stmt.excluded.client_created_at,
                 "input_text": stmt.excluded.input_text,
+                "selected_model_id": stmt.excluded.selected_model_id,
                 "client_metadata": stmt.excluded.client_metadata,
             },
         )

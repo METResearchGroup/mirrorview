@@ -48,6 +48,24 @@ class ModelConfig:
         supported_models = provider_config.get("supported_models", {})
         self._model_config = supported_models.get(model_identifier, {})
 
+    def get_litellm_route(self) -> str:
+        """Get the provider-runtime model route for this public model identifier."""
+        route = self._model_config.get("litellm_route")
+        if isinstance(route, str) and route.strip():
+            return route
+        return self.model_identifier
+
+    def is_available(self) -> bool:
+        """Whether the model should be presented/accepted for app usage."""
+        return bool(self._model_config.get("available", False))
+
+    def get_display_name(self) -> str:
+        """Get model display label for UI surfaces."""
+        display = self._model_config.get("display_name")
+        if isinstance(display, str) and display.strip():
+            return display
+        return self.model_identifier
+
     def get_kwarg_value(self, key: str, default: Any = None) -> Any:
         """Get a kwarg value with hierarchical resolution.
 
@@ -203,6 +221,28 @@ class ModelConfigRegistry:
         return ModelConfig(model_identifier, config)
 
     @classmethod
+    def model_exists(cls, model_identifier: str) -> bool:
+        """Return whether a model identifier is configured and provider-supported."""
+        try:
+            cls.get_model_config(model_identifier)
+            return True
+        except (ValueError, FileNotFoundError):
+            return False
+
+    @classmethod
+    def is_model_available(cls, model_identifier: str) -> bool:
+        """Return whether a model exists and is marked available."""
+        try:
+            return cls.get_model_config(model_identifier).is_available()
+        except (ValueError, FileNotFoundError):
+            return False
+
+    @classmethod
+    def resolve_litellm_route(cls, model_identifier: str) -> str:
+        """Resolve a public model ID to provider runtime route."""
+        return cls.get_model_config(model_identifier).get_litellm_route()
+
+    @classmethod
     def list_providers(cls) -> list[str]:
         """List all configured provider names (excluding 'default')."""
         config = cls._load_config()
@@ -238,6 +278,29 @@ class ModelConfigRegistry:
         return all_models
 
     @classmethod
+    def list_available_models(cls) -> list[dict[str, str]]:
+        """List all available models with UI/display metadata."""
+        available_models: list[dict[str, str]] = []
+        for provider_name in cls.list_providers():
+            for model_id in cls.list_models_for_provider(provider_name):
+                try:
+                    model_config = cls.get_model_config(model_id)
+                except (ValueError, FileNotFoundError):
+                    # Ignore config entries without an implemented provider.
+                    continue
+                if not model_config.is_available():
+                    continue
+                available_models.append(
+                    {
+                        "model_id": model_id,
+                        "display_name": model_config.get_display_name(),
+                        "provider": provider_name,
+                        "litellm_route": model_config.get_litellm_route(),
+                    }
+                )
+        return available_models
+
+    @classmethod
     def get_default_model(cls) -> str:
         """Get the default model from the configuration.
 
@@ -252,5 +315,7 @@ class ModelConfigRegistry:
         default_model = default_config.get("default_model")
         if default_model is None:
             raise KeyError("default_model not found in models.default configuration")
+        if not cls.is_model_available(default_model):
+            raise ValueError(f"default_model '{default_model}' must exist and be available")
         return default_model
 
