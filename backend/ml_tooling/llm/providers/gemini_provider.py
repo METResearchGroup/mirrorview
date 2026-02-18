@@ -102,7 +102,7 @@ class GeminiProvider(LLMProviderProtocol):
             merged_kwargs["safety_settings"] = DEFAULT_GEMINI_SAFETY_SETTINGS
 
         completion_kwargs = {
-            "model": model,
+            "model": model_config.get("litellm_route", model),
             "messages": messages,
             **merged_kwargs,
         }

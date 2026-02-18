@@ -89,7 +89,8 @@ class LLMService:
             model_config_obj = ModelConfigRegistry.get_model_config(model)
             # Convert ModelConfig to dict format expected by providers
             model_config_dict = {
-                "kwargs": model_config_obj.get_all_llm_inference_kwargs()
+                "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
+                "litellm_route": model_config_obj.get_litellm_route(),
             }
         except (ValueError, FileNotFoundError):
             # Model not in config - use empty config dict

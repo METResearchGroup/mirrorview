@@ -19,6 +19,7 @@ class NoopGenerationRepo(GenerationRepo):
         submission_id: uuid.UUID,  # noqa: ARG002
         flip: FlipResponse,  # noqa: ARG002
         provider: str | None = None,  # noqa: ARG002
+        model_id: str | None = None,  # noqa: ARG002
         model_name: str | None = None,  # noqa: ARG002
         prompt_name: str | None = None,  # noqa: ARG002
         prompt_version: str | None = None,  # noqa: ARG002

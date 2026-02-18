@@ -9,8 +9,8 @@
 
 models:
   default:
-    # our default model is gpt-4o-mini.
-    default_model: "gpt-4o-mini"
+    # Public model IDs are used across UI/API. Runtime model routes are provider-specific.
+    default_model: "gpt-5-nano"
     llm_inference_kwargs:
       temperature: 0.0
 
@@ -18,13 +18,15 @@ models:
     llm_inference_kwargs:
       temperature: 0.0
     supported_models:
-      "gpt-4o-mini":
-        llm_inference_kwargs: {}
-      "gpt-4o-mini-2024-07-18":
-        llm_inference_kwargs: {}
-      "gpt-4":
+      "openai-gpt-4o-mini":
+        display_name: "OpenAI GPT-4o Mini"
+        litellm_route: "gpt-4o-mini"
+        available: true
         llm_inference_kwargs: {}
       "gpt-5-nano":
+        display_name: "OpenAI GPT-5 Nano"
+        litellm_route: "gpt-5-nano"
+        available: true
         llm_inference_kwargs:
           # From LiteLLM error message:
           # gpt-5 models (including gpt-5-codex) don't support temperature=0.0.
@@ -32,6 +34,21 @@ models:
           # supported when reasoning_effort='none' (or not specified, as it
           # defaults to 'none').
           temperature: 1
+      "gpt-4o-mini":
+        display_name: "OpenAI GPT-4o Mini (legacy id)"
+        litellm_route: "gpt-4o-mini"
+        available: false
+        llm_inference_kwargs: {}
+      "gpt-4o-mini-2024-07-18":
+        display_name: "OpenAI GPT-4o Mini 2024-07-18"
+        litellm_route: "gpt-4o-mini-2024-07-18"
+        available: false
+        llm_inference_kwargs: {}
+      "gpt-4":
+        display_name: "OpenAI GPT-4"
+        litellm_route: "gpt-4"
+        available: false
+        llm_inference_kwargs: {}
 
   gemini:
     llm_inference_kwargs:
@@ -47,8 +64,14 @@ models:
         threshold: "BLOCK_NONE"
     supported_models:
       "gemini/gemini-1.0-pro-latest":
+        display_name: "Gemini 1.0 Pro"
+        litellm_route: "gemini/gemini-1.0-pro-latest"
+        available: false
         llm_inference_kwargs: {}
       "gemini/gemini-1.5-pro-latest":
+        display_name: "Gemini 1.5 Pro"
+        litellm_route: "gemini/gemini-1.5-pro-latest"
+        available: false
         llm_inference_kwargs: {}
 
   groq:
@@ -58,8 +81,14 @@ models:
       type: "json_object"
     supported_models:
       "groq/llama3-8b-8192":
+        display_name: "Groq Llama3 8B"
+        litellm_route: "groq/llama3-8b-8192"
+        available: false
         llm_inference_kwargs: {}
       "groq/llama3-70b-8192":
+        display_name: "Groq Llama3 70B"
+        litellm_route: "groq/llama3-70b-8192"
+        available: false
         llm_inference_kwargs: {}
 
   huggingface:
@@ -67,9 +96,45 @@ models:
     llm_inference_kwargs: {}
     supported_models:
       "huggingface/unsloth/llama-3-8b":
+        display_name: "HF Unsloth Llama 3 8B"
+        litellm_route: "huggingface/unsloth/llama-3-8b"
+        available: false
         llm_inference_kwargs:
           api_base: "https://api-inference.huggingface.co/models/unsloth/llama-3-8b"
       "huggingface/mistralai/Mixtral-8x22B-v0.1":
+        display_name: "HF Mixtral 8x22B"
+        litellm_route: "huggingface/mistralai/Mixtral-8x22B-v0.1"
+        available: false
         llm_inference_kwargs:
           api_base: "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x22B-v0.1"
+
+  anthropic:
+    llm_inference_kwargs:
+      temperature: 0.0
+    supported_models:
+      "claude-4.5-sonnet":
+        display_name: "Claude 4.5 Sonnet"
+        litellm_route: "claude-sonnet-4-20250514"
+        available: true
+        llm_inference_kwargs: {}
+
+  openrouter:
+    llm_inference_kwargs:
+      temperature: 0.0
+    supported_models:
+      "claude-4.5-haiku":
+        display_name: "Claude 4.5 Haiku (OpenRouter)"
+        litellm_route: "openrouter/anthropic/claude-haiku-4.5"
+        available: true
+        llm_inference_kwargs: {}
+      "openrouter-llama-3.3-70b":
+        display_name: "OpenRouter Llama 3.3 70B"
+        litellm_route: "openrouter/meta-llama/llama-3.3-70b-instruct"
+        available: true
+        llm_inference_kwargs: {}
+      "openrouter-qwen3-32b":
+        display_name: "OpenRouter Qwen3 32B"
+        litellm_route: "openrouter/qwen/qwen3-32b"
+        available: true
+        llm_inference_kwargs: {}
 

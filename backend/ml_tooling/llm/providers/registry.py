@@ -3,9 +3,11 @@
 from typing import Type
 
 from ml_tooling.llm.providers.base import LLMProviderProtocol
+from ml_tooling.llm.providers.anthropic_provider import AnthropicProvider
 from ml_tooling.llm.providers.gemini_provider import GeminiProvider
 from ml_tooling.llm.providers.groq_provider import GroqProvider
 from ml_tooling.llm.providers.openai_provider import OpenAIProvider
+from ml_tooling.llm.providers.openrouter_provider import OpenRouterProvider
 
 
 class LLMProviderRegistry:
@@ -58,6 +60,8 @@ class LLMProviderRegistry:
 # NOTE: choosing to do this here instead of __init__ so that we can use the
 # classmethods while assuming that the providers are already imported.
 LLMProviderRegistry.register(OpenAIProvider)
+LLMProviderRegistry.register(AnthropicProvider)
+LLMProviderRegistry.register(OpenRouterProvider)
 LLMProviderRegistry.register(GroqProvider)
 LLMProviderRegistry.register(GeminiProvider)
 
