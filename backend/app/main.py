@@ -78,6 +78,93 @@ def _apply_response_security_headers(response: Response, *, request_id: str) -> 
         response.headers["Content-Security-Policy"] = csp_value
 
 
+def create_request_too_large_response(*, request_id: str, body_limit_bytes: int) -> Response:
+    response = error_response(
+        status_code=413,
+        code="payload_too_large",
+        message="Request body too large.",
+        request_id=request_id,
+        details={"body_limit_bytes": body_limit_bytes},
+    )
+    _apply_response_security_headers(response, request_id=request_id)
+    return response
+
+
+def validate_payload_too_large(
+    *,
+    request_id: str,
+    path: str,
+    content_length: str | None,
+    body_limit_bytes: int,
+) -> Response | None:
+    if not content_length:
+        return None
+
+    try:
+        if int(content_length) > body_limit_bytes:
+            logger.warning(
+                "payload_too_large_precheck request_id=%s path=%s content_length=%s body_limit_bytes=%s",
+                request_id,
+                path,
+                content_length,
+                body_limit_bytes,
+            )
+            return create_request_too_large_response(request_id=request_id, body_limit_bytes=body_limit_bytes)
+    except ValueError:
+        logger.warning(
+            "invalid_content_length_header request_id=%s path=%s value=%s body_limit_bytes=%s",
+            request_id,
+            path,
+            content_length,
+            body_limit_bytes,
+        )
+
+    return None
+
+
+def create_not_allowed_response(*, request_id: str, retry_after: int) -> Response:
+    response = error_response(
+        status_code=429,
+        code="rate_limited",
+        message="Too many requests.",
+        request_id=request_id,
+        headers={"Retry-After": str(retry_after)},
+    )
+    _apply_response_security_headers(response, request_id=request_id)
+    return response
+
+
+class _RequestBodyTooLarge(Exception):
+    def __init__(self, read_bytes: int):
+        super().__init__("Request body too large")
+        self.read_bytes = read_bytes
+
+
+async def _read_request_body_with_limit(
+    request: Request,
+    *,
+    body_limit_bytes: int,
+) -> None:
+    existing_body = getattr(request, "_body", None)
+    if isinstance(existing_body, (bytes, bytearray)):
+        if len(existing_body) > body_limit_bytes:
+            raise _RequestBodyTooLarge(len(existing_body))
+        return
+
+    read_bytes = 0
+    chunks = bytearray()
+    async for chunk in request.stream():
+        if not chunk:
+            continue
+        read_bytes += len(chunk)
+        if read_bytes > body_limit_bytes:
+            raise _RequestBodyTooLarge(read_bytes)
+        chunks.extend(chunk)
+
+    # Cache for downstream handlers (FastAPI/Starlette request parsing, etc.)
+    request._body = bytes(chunks)  # type: ignore[attr-defined]
+
+
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     request_id = uuid4().hex
@@ -87,19 +174,38 @@ async def security_middleware(request: Request, call_next):
     client_ip = extract_client_ip(request, trust_proxy_headers=trust_proxy_headers)
 
     content_length = request.headers.get("content-length")
-    if request.method in {"POST", "PUT", "PATCH"} and content_length:
+    if request.method in {"POST", "PUT", "PATCH"}:
+        precheck_response = validate_payload_too_large(
+            request_id=request_id,
+            path=path,
+            content_length=content_length,
+            body_limit_bytes=body_limit_bytes,
+        )
+        if precheck_response is not None:
+            return precheck_response
+
         try:
-            if int(content_length) > body_limit_bytes:
-                response = error_response(
-                    status_code=413,
-                    code="payload_too_large",
-                    message="Request body too large.",
-                    request_id=request_id,
-                )
-                _apply_response_security_headers(response, request_id=request_id)
-                return response
-        except ValueError:
-            logger.warning("Invalid content-length header request_id=%s value=%s", request_id, content_length)
+            await _read_request_body_with_limit(
+                request,
+                body_limit_bytes=body_limit_bytes,
+            )
+        except _RequestBodyTooLarge as exc:
+            logger.warning(
+                "payload_too_large_stream request_id=%s path=%s read_bytes=%s body_limit_bytes=%s",
+                request_id,
+                path,
+                exc.read_bytes,
+                body_limit_bytes,
+            )
+            return create_request_too_large_response(request_id=request_id, body_limit_bytes=body_limit_bytes)
+        except Exception:
+            logger.exception(
+                "request_body_read_failed request_id=%s path=%s body_limit_bytes=%s",
+                request_id,
+                path,
+                body_limit_bytes,
+            )
+            return create_request_too_large_response(request_id=request_id, body_limit_bytes=body_limit_bytes)
 
     scope = resolve_rate_limit_scope(path)
     if scope and request.method != "OPTIONS":
@@ -128,15 +234,7 @@ async def security_middleware(request: Request, call_next):
                 client_ip,
                 retry_after,
             )
-            response = error_response(
-                status_code=429,
-                code="rate_limited",
-                message="Too many requests.",
-                request_id=request_id,
-                headers={"Retry-After": str(retry_after)},
-            )
-            _apply_response_security_headers(response, request_id=request_id)
-            return response
+            return create_not_allowed_response(request_id=request_id, retry_after=retry_after)
 
     response = await call_next(request)
     _apply_response_security_headers(response, request_id=request_id)
