@@ -50,9 +50,9 @@ class EnvVarsContainer:
             "NYTIMES_KEY": str,
             "HF_TOKEN": str,
             "OPENAI_API_KEY": str,
-            "GOOGLE_AI_STUDIO_KEY": str,
+            "ANTHROPIC_API_KEY": str,
+            "OPENROUTER_API_KEY": str,
             "NEWSAPI_API_KEY": str,
-            "GROQ_API_KEY": str,
             "MONGODB_URI": str,
             "LANGTRACE_API_KEY": str,
             "COMET_API_KEY": str,
@@ -197,9 +197,9 @@ class EnvVarsContainer:
         self._env_vars["NYTIMES_KEY"] = os.getenv("NYTIMES_KEY")
         self._env_vars["HF_TOKEN"] = os.getenv("HF_TOKEN")
         self._env_vars["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-        self._env_vars["GOOGLE_AI_STUDIO_KEY"] = os.getenv("GOOGLE_AI_STUDIO_KEY")
+        self._env_vars["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY")
+        self._env_vars["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
         self._env_vars["NEWSAPI_API_KEY"] = os.getenv("NEWSAPI_API_KEY")
-        self._env_vars["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
         self._env_vars["MONGODB_URI"] = os.getenv("MONGODB_URI")
         self._env_vars["LANGTRACE_API_KEY"] = os.getenv("LANGTRACE_API_KEY")
         self._env_vars["COMET_API_KEY"] = os.getenv("COMET_API_KEY")

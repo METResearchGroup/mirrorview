@@ -17,7 +17,7 @@ class LLMProviderProtocol(ABC):
     @property
     @abstractmethod
     def provider_name(self) -> str:
-        """Return the provider name (e.g., 'openai', 'gemini', 'groq')."""
+        """Return the provider name (e.g., 'openai', 'anthropic', 'openrouter')."""
         ...
 
     @property
@@ -26,7 +26,8 @@ class LLMProviderProtocol(ABC):
         """Return list of model identifiers this provider supports.
 
         Examples: ['gpt-4o-mini', 'gpt-4'] for OpenAI,
-        ['gemini/gemini-1.5-pro-latest'] for Gemini.
+        ['claude-4.5-sonnet'] for Anthropic,
+        ['claude-4.5-haiku'] for OpenRouter.
         """
         ...
 

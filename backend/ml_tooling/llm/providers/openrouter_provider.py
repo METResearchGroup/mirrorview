@@ -1,4 +1,4 @@
-"""OpenAI provider implementation."""
+"""OpenRouter provider implementation."""
 
 from ml_tooling.llm.providers.base import LLMProviderProtocol
 from ml_tooling.llm.providers.provider_mixins import (
@@ -8,26 +8,24 @@ from ml_tooling.llm.providers.provider_mixins import (
 )
 
 
-class OpenAIProvider(
+class OpenRouterProvider(
     EnvApiKeyMixin,
     StrictSchemaCompletionMixin,
     SupportsModelMixin,
     LLMProviderProtocol,
 ):
-    """OpenAI provider implementation with shared helpers."""
+    """OpenRouter provider implementation with shared helpers."""
 
-    API_KEY_ENV_VAR = "OPENAI_API_KEY"
+    API_KEY_ENV_VAR = "OPENROUTER_API_KEY"
 
     @property
     def provider_name(self) -> str:
-        return "openai"
+        return "openrouter"
 
     @property
     def supported_models(self) -> list[str]:
         return [
-            "openai-gpt-4o-mini",
-            "gpt-5-nano",
-            "gpt-4o-mini",
-            "gpt-4o-mini-2024-07-18",
-            "gpt-4",
+            "claude-4.5-haiku",
+            "openrouter-llama-3.3-70b",
+            "openrouter-qwen3-32b",
         ]

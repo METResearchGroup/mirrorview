@@ -47,7 +47,7 @@ class LLMService:
         """Get the provider instance for a given model.
 
         Args:
-            model: Model identifier (e.g., 'gpt-4o-mini', 'groq/llama3-8b-8192')
+            model: Model identifier (e.g., 'gpt-4o-mini', 'openrouter/anthropic/claude-haiku-4.5')
 
         Returns:
             Provider instance that supports the given model
@@ -89,7 +89,8 @@ class LLMService:
             model_config_obj = ModelConfigRegistry.get_model_config(model)
             # Convert ModelConfig to dict format expected by providers
             model_config_dict = {
-                "kwargs": model_config_obj.get_all_llm_inference_kwargs()
+                "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
+                "litellm_route": model_config_obj.get_litellm_route(),
             }
         except (ValueError, FileNotFoundError):
             # Model not in config - use empty config dict
