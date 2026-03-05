@@ -75,11 +75,11 @@ def test_openrouter_haiku_requires_fallback() -> None:
 
 def test_llm_service_uses_json_object_fallback_for_unsupported_structured_output() -> None:
     service = LLMService()
-    provider = AnthropicProvider()
+    provider = OpenRouterProvider()
     provider.initialize(api_key="test")
 
     completion_kwargs, response_format_dict, response_mode = service._prepare_completion_kwargs(
-        model="test-model",
+        model="claude-4.5-haiku",
         provider=provider,
         response_format=_TestResponseModel,
     )

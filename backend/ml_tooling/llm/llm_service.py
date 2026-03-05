@@ -76,7 +76,7 @@ class LLMService:
         provider: LLMProviderProtocol,
         response_format: type[BaseModel] | None = None,
         **kwargs,
-    ) -> tuple[dict, dict[str, Any] | None]:
+    ) -> tuple[dict[str, Any], dict[str, Any] | None, ResponseMode]:
         """Extract shared logic for preparing completion kwargs.
 
         Used by both single and batch completion methods to avoid duplication.
@@ -91,7 +91,7 @@ class LLMService:
                 These override any default kwargs from the model configuration.
 
         Returns:
-            Tuple of (completion_kwargs dict, response_format_dict or None)
+            Tuple of (completion_kwargs dict, response_format_dict or None, response_mode)
         """
         # Get model configuration from registry
         try:
@@ -114,11 +114,17 @@ class LLMService:
             )
             if response_format_dict is not None:
                 response_mode = ResponseMode.JSON_SCHEMA
-            elif provider.supports_json_mode():
-                response_format_dict = {"type": "json_object"}
-                response_mode = ResponseMode.JSON_OBJECT
             else:
-                response_mode = ResponseMode.NONE
+                # Fallback: prefer JSON mode when `response_format` is supported.
+                # This must be capability-checked because not all providers/models accept it.
+                runtime_route = model_config_dict.get("litellm_route") or model
+                if self._supports_response_format_param(
+                    runtime_route, provider.provider_name
+                ) and provider.supports_json_mode():
+                    response_format_dict = {"type": "json_object"}
+                    response_mode = ResponseMode.JSON_OBJECT
+                else:
+                    response_mode = ResponseMode.NONE
 
         # Prepare completion kwargs using provider-specific logic
         # Note: messages is passed as placeholder empty list here, will be set by caller
@@ -131,6 +137,18 @@ class LLMService:
         )
 
         return completion_kwargs, response_format_dict, response_mode
+
+    def _supports_response_format_param(self, model: str, provider_name: str) -> bool:
+        try:
+            supported = (
+                litellm.get_supported_openai_params(
+                    model=model, custom_llm_provider=provider_name
+                )
+                or []
+            )
+            return "response_format" in supported
+        except Exception:
+            return False
 
     def _chat_completion(
         self,
