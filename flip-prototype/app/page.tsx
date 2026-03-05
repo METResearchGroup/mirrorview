@@ -100,26 +100,15 @@ export default function Home() {
     [],
   );
 
-  const applyExample = React.useCallback(
-    (example: Example) => {
-      setInputText(example.input_text);
-      setFlippedText(null);
-      setExplanation(null);
-      setIsExplanationOpen(true);
-      setFeedback(null);
-      setCustomVersion("");
-      setSubmission(null);
-    },
-    [
-      setInputText,
-      setFlippedText,
-      setExplanation,
-      setIsExplanationOpen,
-      setFeedback,
-      setCustomVersion,
-      setSubmission,
-    ],
-  );
+  const applyExample = React.useCallback((example: Example) => {
+    setInputText(example.input_text);
+    setFlippedText(null);
+    setExplanation(null);
+    setIsExplanationOpen(true);
+    setFeedback(null);
+    setCustomVersion("");
+    setSubmission(null);
+  }, []);
 
   const loadExampleSuggestions = React.useCallback(async () => {
     const baseUrl = getBaseUrl();
@@ -156,7 +145,9 @@ export default function Home() {
     setIsLoadingRandomExample(true);
     try {
       const params = new URLSearchParams();
-      exampleSuggestions.forEach((example) => params.append("exclude_id", example.id));
+      for (const example of exampleSuggestions) {
+        params.append("exclude_id", example.id);
+      }
       const query = params.toString();
       const url = `${baseUrl}/examples/random${query ? `?${query}` : ""}`;
       const res = await fetch(url);

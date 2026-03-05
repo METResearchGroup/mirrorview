@@ -30,6 +30,7 @@ class TestExamplesApi:
     def test_examples_random_respects_exclusion(self):
         """Verifies exclude_id parameter prevents returning that entry."""
         catalog = load_examples()
+        assert catalog, "Catalog must contain at least one example for exclusion tests"
         excluded_id = catalog[0].id
         with TestClient(app) as client:
             response = client.get(f"/examples/random?exclude_id={excluded_id}")
