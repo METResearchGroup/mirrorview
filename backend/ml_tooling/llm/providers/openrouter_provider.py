@@ -1,19 +1,9 @@
 """OpenRouter provider implementation."""
 
-from ml_tooling.llm.providers.base import LLMProviderProtocol
-from ml_tooling.llm.providers.provider_mixins import (
-    EnvApiKeyMixin,
-    SupportsModelMixin,
-    StrictSchemaCompletionMixin,
-)
+from ml_tooling.llm.providers.provider_base import BaseLLMProvider
 
 
-class OpenRouterProvider(
-    EnvApiKeyMixin,
-    StrictSchemaCompletionMixin,
-    SupportsModelMixin,
-    LLMProviderProtocol,
-):
+class OpenRouterProvider(BaseLLMProvider):
     """OpenRouter provider implementation with shared helpers."""
 
     API_KEY_ENV_VAR = "OPENROUTER_API_KEY"
