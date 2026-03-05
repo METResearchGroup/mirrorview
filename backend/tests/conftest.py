@@ -1,14 +1,17 @@
 import sys
 from pathlib import Path
 
-# Ensure `backend/` is on sys.path so tests can import `app.*`
+import pytest
+
+# Ensure the repo root and `backend/` are on sys.path so tests can import `backend.*` and `app.*`
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = BACKEND_ROOT.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-import pytest
-
-from lib.load_env_vars import settings
+from lib.load_env_vars import settings  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
