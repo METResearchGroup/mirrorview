@@ -48,8 +48,6 @@ async def generate_response(
         text_len,
     )
 
-    if not ModelConfigRegistry.model_exists(model_id):
-        raise HTTPException(status_code=400, detail=f"Unknown model_id: {model_id}")
     if not ModelConfigRegistry.is_model_available(model_id):
         raise HTTPException(status_code=400, detail=f"Model is not available: {model_id}")
 
