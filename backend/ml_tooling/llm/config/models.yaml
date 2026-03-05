@@ -50,47 +50,6 @@ models:
         available: false
         llm_inference_kwargs: {}
 
-  gemini:
-    llm_inference_kwargs:
-      temperature: 0.0
-    safety_settings:
-      - category: "HARM_CATEGORY_HARASSMENT"
-        threshold: "BLOCK_NONE"
-      - category: "HARM_CATEGORY_HATE_SPEECH"
-        threshold: "BLOCK_NONE"
-      - category: "HARM_CATEGORY_SEXUALLY_EXPLICIT"
-        threshold: "BLOCK_NONE"
-      - category: "HARM_CATEGORY_DANGEROUS_CONTENT"
-        threshold: "BLOCK_NONE"
-    supported_models:
-      "gemini/gemini-1.0-pro-latest":
-        display_name: "Gemini 1.0 Pro"
-        litellm_route: "gemini/gemini-1.0-pro-latest"
-        available: false
-        llm_inference_kwargs: {}
-      "gemini/gemini-1.5-pro-latest":
-        display_name: "Gemini 1.5 Pro"
-        litellm_route: "gemini/gemini-1.5-pro-latest"
-        available: false
-        llm_inference_kwargs: {}
-
-  groq:
-    llm_inference_kwargs:
-      temperature: 0.0
-    response_format:
-      type: "json_object"
-    supported_models:
-      "groq/llama3-8b-8192":
-        display_name: "Groq Llama3 8B"
-        litellm_route: "groq/llama3-8b-8192"
-        available: false
-        llm_inference_kwargs: {}
-      "groq/llama3-70b-8192":
-        display_name: "Groq Llama3 70B"
-        litellm_route: "groq/llama3-70b-8192"
-        available: false
-        llm_inference_kwargs: {}
-
   huggingface:
     # HuggingFace models typically need api_base in kwargs (set per-model)
     llm_inference_kwargs: {}

@@ -25,15 +25,15 @@ from app.security import (
     validation_exception_handler,
     get_request_body_limit_bytes,
 )
-from lib.load_env_vars import EnvVarsContainer
+from lib.load_env_vars import settings
 
 logger = logging.getLogger(__name__)
 
 
 def _parse_cors_origins() -> list[str]:
+    run_mode = settings().run_mode
     raw = os.getenv("CORS_ORIGINS", "")
     origins = [o.strip() for o in raw.split(",") if o.strip()]
-    run_mode = os.getenv("RUN_MODE", "test")
     if run_mode != "prod" and "http://localhost:3000" not in origins:
         origins.append("http://localhost:3000")
     return origins
@@ -42,7 +42,7 @@ def _parse_cors_origins() -> list[str]:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     if is_persistence_enabled():
-        database_url = EnvVarsContainer.get_env_var("DATABASE_URL", required=True)
+        database_url = settings().require_database_url()
         init_engine(database_url)
     try:
         yield

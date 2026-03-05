@@ -4,8 +4,6 @@ from typing import Type
 
 from ml_tooling.llm.providers.base import LLMProviderProtocol
 from ml_tooling.llm.providers.anthropic_provider import AnthropicProvider
-from ml_tooling.llm.providers.gemini_provider import GeminiProvider
-from ml_tooling.llm.providers.groq_provider import GroqProvider
 from ml_tooling.llm.providers.openai_provider import OpenAIProvider
 from ml_tooling.llm.providers.openrouter_provider import OpenRouterProvider
 
@@ -29,7 +27,7 @@ class LLMProviderRegistry:
         """Get provider for a given model.
 
         Args:
-            model: Model identifier (e.g., 'gpt-4o-mini', 'groq/llama3-8b-8192')
+            model: Model identifier (e.g., 'gpt-4o-mini', 'claude-4.5-haiku')
 
         Returns:
             Provider instance that supports the given model
@@ -62,6 +60,4 @@ class LLMProviderRegistry:
 LLMProviderRegistry.register(OpenAIProvider)
 LLMProviderRegistry.register(AnthropicProvider)
 LLMProviderRegistry.register(OpenRouterProvider)
-LLMProviderRegistry.register(GroqProvider)
-LLMProviderRegistry.register(GeminiProvider)
 
