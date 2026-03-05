@@ -1,3 +1,5 @@
+"""Null repos used when persistence is disabled via `PERSISTENCE_ENABLED=false`."""
+
 from __future__ import annotations
 
 import uuid
@@ -6,13 +8,15 @@ from datetime import datetime
 from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
 from app.schemas import FlipResponse, SubmissionContext
 
+NULL_UUID = uuid.UUID(int=0)
 
-class NoopSubmissionRepo(SubmissionRepo):
+
+class NullSubmissionRepo(SubmissionRepo):
     async def upsert(self, submission: SubmissionContext) -> None:  # noqa: ARG002
         return
 
 
-class NoopGenerationRepo(GenerationRepo):
+class NullGenerationRepo(GenerationRepo):
     async def add(  # noqa: PLR0913
         self,
         *,
@@ -26,10 +30,10 @@ class NoopGenerationRepo(GenerationRepo):
         latency_ms: int | None = None,  # noqa: ARG002
         usage: dict | None = None,  # noqa: ARG002
     ) -> uuid.UUID:
-        return uuid.UUID(int=0)
+        return NULL_UUID
 
 
-class NoopThumbFeedbackRepo(ThumbFeedbackRepo):
+class NullThumbFeedbackRepo(ThumbFeedbackRepo):
     async def add(  # noqa: ARG002
         self,
         *,
@@ -41,7 +45,7 @@ class NoopThumbFeedbackRepo(ThumbFeedbackRepo):
         return
 
 
-class NoopEditFeedbackRepo(EditFeedbackRepo):
+class NullEditFeedbackRepo(EditFeedbackRepo):
     async def add(  # noqa: ARG002
         self,
         *,

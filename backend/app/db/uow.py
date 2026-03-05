@@ -24,7 +24,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
             yield
 
 
-class NoopUnitOfWork(UnitOfWork):
+class NullUnitOfWork(UnitOfWork):
     @asynccontextmanager
     async def transaction(self) -> AsyncIterator[None]:
         yield

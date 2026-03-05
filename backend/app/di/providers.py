@@ -6,11 +6,11 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
-from app.db.repos.noop import (
-    NoopEditFeedbackRepo,
-    NoopGenerationRepo,
-    NoopSubmissionRepo,
-    NoopThumbFeedbackRepo,
+from app.db.repos.null import (
+    NullEditFeedbackRepo,
+    NullGenerationRepo,
+    NullSubmissionRepo,
+    NullThumbFeedbackRepo,
 )
 from app.db.repos.sqlalchemy import (
     SqlAlchemyEditFeedbackRepo,
@@ -19,7 +19,7 @@ from app.db.repos.sqlalchemy import (
     SqlAlchemyThumbFeedbackRepo,
 )
 from app.db.session import get_sessionmaker, is_persistence_enabled
-from app.db.uow import NoopUnitOfWork, SqlAlchemyUnitOfWork, UnitOfWork
+from app.db.uow import NullUnitOfWork, SqlAlchemyUnitOfWork, UnitOfWork
 from app.services.feedback_service import FeedbackService
 from app.services.generation_service import GenerationService, LLMClient
 
@@ -43,31 +43,31 @@ async def get_maybe_session() -> AsyncIterator[AsyncSession | None]:
 
 def get_unit_of_work(session: AsyncSession | None = Depends(get_maybe_session)) -> UnitOfWork:
     if session is None:
-        return NoopUnitOfWork()
+        return NullUnitOfWork()
     return SqlAlchemyUnitOfWork(session)
 
 
 def get_submission_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> SubmissionRepo:
     if session is None:
-        return NoopSubmissionRepo()
+        return NullSubmissionRepo()
     return SqlAlchemySubmissionRepo(session)
 
 
 def get_generation_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> GenerationRepo:
     if session is None:
-        return NoopGenerationRepo()
+        return NullGenerationRepo()
     return SqlAlchemyGenerationRepo(session)
 
 
 def get_thumb_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> ThumbFeedbackRepo:
     if session is None:
-        return NoopThumbFeedbackRepo()
+        return NullThumbFeedbackRepo()
     return SqlAlchemyThumbFeedbackRepo(session)
 
 
 def get_edit_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> EditFeedbackRepo:
     if session is None:
-        return NoopEditFeedbackRepo()
+        return NullEditFeedbackRepo()
     return SqlAlchemyEditFeedbackRepo(session)
 
 
