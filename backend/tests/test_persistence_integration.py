@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from testcontainers.postgres import PostgresContainer
 from docker.errors import DockerException
 
+from lib.load_env_vars import settings
+
 
 def _run_migrations(database_url: str) -> None:
     backend_root = Path(__file__).resolve().parents[1]
@@ -53,9 +55,7 @@ class TestPersistenceIntegration:
                 monkeypatch.setenv("PERSISTENCE_ENABLED", "true")
                 monkeypatch.setenv("DATABASE_URL", database_url)
 
-                from lib.load_env_vars import EnvVarsContainer
-
-                EnvVarsContainer._instance = None  # noqa: SLF001 (test-only reset)
+                settings.cache_clear()
 
                 _run_migrations(database_url)
 
