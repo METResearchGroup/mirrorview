@@ -134,7 +134,8 @@ def test_generate_response_rejects_unknown_model_id(monkeypatch):
         },
     )
     assert res.status_code == 400
-    assert "Unknown model_id" in res.json()["error"]["message"]
+    assert "Model is not available" in res.json()["error"]["message"]
+    assert "does-not-exist" in res.json()["error"]["message"]
 
 
 def test_generate_response_rejects_unavailable_model_id(monkeypatch):

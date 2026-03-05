@@ -69,7 +69,7 @@ class TestPersistenceIntegration:
                     def structured_completion(self, messages, response_model, model=None):
                         return response_model(flipped_text="hello (flipped)", explanation="because")
 
-                monkeypatch.setattr(providers, "get_llm_client", lambda: _FakeLLM())
+                main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
 
                 submission_id = str(uuid.uuid4())
                 payload = {
@@ -130,6 +130,65 @@ class TestPersistenceIntegration:
                 )
                 expected_thumbs = 1
                 assert thumbs_row[0] == expected_thumbs
+                main.app.dependency_overrides.clear()
+        except (DockerException, FileNotFoundError) as e:
+            pytest.skip(f"Docker not available for integration test: {e}")
+
+    def test_generate_persists_rows_without_manual_migrations(self, monkeypatch):
+        """App startup applies migrations so a fresh DB can serve requests."""
+        try:
+            with PostgresContainer("postgres:16-alpine") as pg:
+                sync_url = pg.get_connection_url()
+                database_url = (
+                    sync_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+                    .replace("postgresql://", "postgresql+asyncpg://")
+                    .replace("postgres://", "postgresql+asyncpg://")
+                )
+
+                monkeypatch.setenv("RUN_MODE", "test")
+                monkeypatch.setenv("PERSISTENCE_ENABLED", "true")
+                monkeypatch.setenv("DATABASE_URL", database_url)
+
+                settings.cache_clear()
+
+                import app.di.providers as providers
+                import app.main as main
+
+                importlib.reload(providers)
+                importlib.reload(main)
+
+                class _FakeLLM:
+                    def structured_completion(self, messages, response_model, model=None):
+                        return response_model(flipped_text="hello (flipped)", explanation="because")
+
+                main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+
+                submission_id = str(uuid.uuid4())
+                payload = {
+                    "text": "hello",
+                    "submission": {
+                        "id": submission_id,
+                        "created_at": "2026-02-03T00:00:00.000Z",
+                        "input_text": "hello",
+                        "model_id": "gpt-5-nano",
+                    },
+                }
+
+                with TestClient(main.app) as client:
+                    res = client.post("/generate_response", json=payload)
+                    assert res.status_code == 200
+
+                submissions_row = asyncio.run(
+                    _fetch_one(
+                        database_url,
+                        "select count(*), max(selected_model_id) from submissions where id = :id",
+                        {"id": submission_id},
+                    )
+                )
+                assert submissions_row[0] == 1
+                assert submissions_row[1] == "gpt-5-nano"
+
+                main.app.dependency_overrides.clear()
         except (DockerException, FileNotFoundError) as e:
             pytest.skip(f"Docker not available for integration test: {e}")
 

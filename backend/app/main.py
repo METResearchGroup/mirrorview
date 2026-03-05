@@ -4,6 +4,7 @@ import time
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
+import anyio
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
@@ -11,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routers import feedback_router, generate_router
+from app.db.migrate import run_migrations_to_head
 from app.db.session import dispose_engine, init_engine, is_persistence_enabled
 from app.security import (
     EndpointRateLimiter,
@@ -43,6 +45,7 @@ def _parse_cors_origins() -> list[str]:
 async def lifespan(_: FastAPI):
     if is_persistence_enabled():
         database_url = settings().require_database_url()
+        await anyio.to_thread.run_sync(run_migrations_to_head, database_url, abandon_on_cancel=True)
         init_engine(database_url)
     try:
         yield
