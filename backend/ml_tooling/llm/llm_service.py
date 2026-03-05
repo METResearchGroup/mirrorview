@@ -47,7 +47,8 @@ class LLMService:
         """Get the provider instance for a given model.
 
         Args:
-            model: Model identifier (e.g., 'gpt-4o-mini', 'openrouter/anthropic/claude-haiku-4.5')
+            model: Model identifier (e.g., provider-config key like 'gpt-4o-mini-2024-07-18'
+                or 'claude-4.5-haiku')
 
         Returns:
             Provider instance that supports the given model
