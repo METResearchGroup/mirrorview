@@ -1,191 +1,94 @@
-"""Centralized environment variable loading.
-
-This module exists to avoid import-time side effects spread across the codebase.
-It encapsulates:
-- Loading repo-root `.env` via python-dotenv
-- RUN_MODE-specific overrides (notably in tests)
-- Optional prod-only secret fetching for Bluesky credentials
-
-Public API: `EnvVarsContainer.get_env_var(name)`
-"""
+"""Centralized environment configuration."""
 
 from __future__ import annotations
 
-import json
 import os
-import threading
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
 
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from backend.lib.constants import ROOT_DIR
 from dotenv import load_dotenv
 
-from lib.aws.secretsmanager import get_secret
+
+_VALID_RUN_MODES = {"local", "test", "prod"}
+_TRUTHY_VALUES = {"1", "true", "t", "yes", "y", "on"}
 
 
-class EnvVarsContainer:
-    """Thread-safe singleton container for environment variables."""
+class Settings(BaseModel):
+    run_mode: str
+    persistence_enabled: bool
+    database_url: str | None
+    api_keys: dict[str, str | None]
 
-    _instance: Optional["EnvVarsContainer"] = None
-    _instance_lock = threading.Lock()
+    model_config = ConfigDict(frozen=True)
 
-    def __init__(self) -> None:
-        self._initialized = False
-        # Store raw values; apply defaults/casting at retrieval time.
-        self._env_vars: dict[str, Any] = {}
-        # Known env-var expected types. If a key is not present here, `get_env_var`
-        # will return None when missing.
-        self._env_var_types: dict[str, type] = {
-            # Execution/config
-            "RUN_MODE": str,
-            "DATABASE_URL": str,
-            "PERSISTENCE_ENABLED": str,
-            "BSKY_DATA_DIR": str,
-            # Bluesky credentials
-            "BLUESKY_HANDLE": str,
-            "BLUESKY_PASSWORD": str,
-            "DEV_BLUESKY_HANDLE": str,
-            "DEV_BLUESKY_PASSWORD": str,
-            # API keys / integration secrets
-            "OPENAI_API_KEY": str,
-            "ANTHROPIC_API_KEY": str,
-            "OPENROUTER_API_KEY": str,
-        }
-        self._init_lock = threading.Lock()
-
-    @classmethod
-    def get_env_var(cls, name: str, required: bool = False) -> Any:
-        """Get an environment variable value after container initialization.
-
-        Args:
-            name: The name of the environment variable to retrieve
-            required: If True, raises ValueError when the env var is missing or empty
-
-        Defaults when missing (if not required):
-        - `str`  -> ""
-        - `int`  -> 0
-        - `float`-> 0.0
-        - other/unknown -> None
-
-        Raises:
-            ValueError: If required=True and the env var is missing or empty
-        """
-        instance = cls._get_instance()
-        expected_type = instance._env_var_types.get(name)
-        raw = instance._env_vars.get(name, None)
-
-        # Check if required and missing/empty
-        if required:
-            if raw is None:
-                raise ValueError(
-                    f"{name} is required but is missing. "
-                    f"Please set the {name} environment variable."
-                )
-            # For string types, also check if empty after stripping
-            if expected_type is str and isinstance(raw, str) and not raw.strip():
-                raise ValueError(
-                    f"{name} is required but is empty. "
-                    f"Please set the {name} environment variable to a non-empty value."
-                )
-
-        # Missing value: apply defaults by expected type.
-        if raw is None:
-            if expected_type is str:
-                return ""
-            if expected_type is int:
-                return 0
-            if expected_type is float:
-                return 0.0
-            return None
-
-        # Present: cast if needed.
-        if expected_type is None:
-            return raw
-        if expected_type is str:
-            return str(raw)
-        if expected_type is int:
-            try:
-                return int(raw)
-            except (TypeError, ValueError):
-                return 0
-        if expected_type is float:
-            try:
-                return float(raw)
-            except (TypeError, ValueError):
-                return 0.0
-        # Unknown/unsupported expected type -> return as-is.
-        return raw
-
-    @classmethod
-    def _get_instance(cls) -> "EnvVarsContainer":
-        if cls._instance is None:
-            with cls._instance_lock:
-                if cls._instance is None:
-                    cls._instance = cls()
-        cls._instance._ensure_initialized()
-        return cls._instance
-
-    def _ensure_initialized(self) -> None:
-        if self._initialized:
-            return
-        with self._init_lock:
-            if self._initialized:
-                return
-            self._initialize_env_vars()
-            self._initialized = True
-
-    def _initialize_env_vars(self) -> None:
-        # Load .env from repo root (../../.env relative to backend/lib/)
-        current_file_directory = Path(__file__).resolve().parent
-        env_path = (current_file_directory / "../../.env").resolve()
-        load_dotenv(env_path)
-
-        run_mode = os.getenv("RUN_MODE", "test")  # local, test, or prod
-        if run_mode not in {"local", "test", "prod"}:
+    @field_validator("run_mode", mode="before")
+    def _validate_run_mode(cls, value: str) -> str:
+        normalized = (value or "").strip().lower()
+        if normalized not in _VALID_RUN_MODES:
             raise ValueError("RUN_MODE must be set to either 'local', 'test', or 'prod'")
+        return normalized
 
-        # RUN_MODE is itself an "env var" we serve via this container.
-        self._env_vars["RUN_MODE"] = run_mode
+    def require_database_url(self) -> str:
+        url = (self.database_url or "").strip()
+        if not url:
+            raise ValueError("DATABASE_URL is required when persistence is enabled.")
+        return url
 
-        if run_mode == "test":
-            # Keep tests hermetic and avoid external calls.
-            self._env_vars["BLUESKY_HANDLE"] = "test"
-            self._env_vars["BLUESKY_PASSWORD"] = "test"
-            self._env_vars["DEV_BLUESKY_HANDLE"] = "test"
-            self._env_vars["DEV_BLUESKY_PASSWORD"] = "test"
+    def require_api_key(self, env_var: str) -> str:
+        value = (self.api_keys.get(env_var) or "").strip()
+        if not value:
+            raise ValueError(f"{env_var} is required but not set in the environment.")
+        return value
 
-            # Expand ~ for correctness; tests can control HOME.
-            data_dir = os.path.expanduser("~/tmp/")
-            self._env_vars["BSKY_DATA_DIR"] = data_dir
-            os.makedirs(data_dir, exist_ok=True)
 
-            # Default tests to DB-disabled, but allow opt-in integration tests.
-            self._env_vars["PERSISTENCE_ENABLED"] = os.getenv("PERSISTENCE_ENABLED", "false")
-            self._env_vars["DATABASE_URL"] = os.getenv("DATABASE_URL", "")
-        else:
-            self._env_vars["BLUESKY_HANDLE"] = os.getenv("BLUESKY_HANDLE")
-            self._env_vars["BLUESKY_PASSWORD"] = os.getenv("BLUESKY_PASSWORD")
-            self._env_vars["DEV_BLUESKY_HANDLE"] = os.getenv("DEV_BLUESKY_HANDLE")
-            self._env_vars["DEV_BLUESKY_PASSWORD"] = os.getenv("DEV_BLUESKY_PASSWORD")
-            self._env_vars["BSKY_DATA_DIR"] = os.getenv("BSKY_DATA_DIR")
+@lru_cache(maxsize=1)
+def settings() -> Settings:
+    return _build_settings()
 
-            self._env_vars["PERSISTENCE_ENABLED"] = os.getenv("PERSISTENCE_ENABLED", "true")
-            self._env_vars["DATABASE_URL"] = os.getenv("DATABASE_URL")
+def _build_settings() -> Settings:
+    _load_dotenv()
 
-        # Prod-only secret loading for Bluesky creds.
-        if run_mode == "prod" and (
-            not self._env_vars.get("BLUESKY_HANDLE") or not self._env_vars.get("BLUESKY_PASSWORD")
-        ):
-            bsky_credentials = json.loads(get_secret("bluesky_account_credentials"))
-            self._env_vars["BLUESKY_HANDLE"] = bsky_credentials.get("bluesky_handle")
-            self._env_vars["BLUESKY_PASSWORD"] = bsky_credentials.get("bluesky_password")
+    run_mode: str = _load_run_mode()
+    persistence_enabled: bool = _load_persistence_enabled(run_mode)
+    database_url: str | None = _load_database_url()
+    api_keys: dict[str, str | None] = _load_api_keys()
 
-        # Required prod settings.
-        if run_mode == "prod" and not self._env_vars.get("BSKY_DATA_DIR"):
-            raise ValueError(
-                "BSKY_DATA_DIR must be set to the path to the Bluesky data directory"
-            )
+    return Settings(
+        run_mode=run_mode,
+        persistence_enabled=persistence_enabled,
+        database_url=database_url,
+        api_keys=api_keys,
+    )
 
-        # Other integration keys (left as Optional[str], matching os.getenv behavior)
-        self._env_vars["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-        self._env_vars["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY")
-        self._env_vars["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
+def _repo_env_path() -> Path:
+    return ROOT_DIR / ".env"
+
+def _load_dotenv() -> None:
+    load_dotenv(_repo_env_path())
+
+def _load_run_mode() -> str:
+    run_mode = os.getenv("RUN_MODE", "test").strip().lower()
+    if run_mode not in _VALID_RUN_MODES:
+        raise ValueError("RUN_MODE must be set to either 'local', 'test', or 'prod'")
+    return run_mode
+
+def _load_persistence_enabled(run_mode: str) -> bool:
+    persistence_default = "false" if run_mode == "test" else "true"
+    persistence_enabled = _is_truthy(os.getenv("PERSISTENCE_ENABLED", persistence_default))
+    return persistence_enabled
+
+def _load_database_url() -> str | None:
+    return os.getenv("DATABASE_URL")
+
+def _load_api_keys() -> dict[str, str | None]:
+    return {
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
+        "OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY"),
+    }
+
+def _is_truthy(value: str | None) -> bool:
+    return bool(value and value.strip().lower() in _TRUTHY_VALUES)

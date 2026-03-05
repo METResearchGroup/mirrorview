@@ -7,7 +7,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
-from lib.load_env_vars import EnvVarsContainer
+from lib.load_env_vars import settings
 
 
 class ProviderStateMixin:
@@ -35,7 +35,7 @@ class EnvApiKeyMixin(ProviderStateMixin):
 
     def initialize(self, api_key: str | None = None) -> None:
         if api_key is None:
-            api_key = EnvVarsContainer.get_env_var(self.API_KEY_ENV_VAR, required=True)
+            api_key = settings().require_api_key(self.API_KEY_ENV_VAR)
         if not self._initialized:
             self._api_key = api_key
             self._initialized = True
