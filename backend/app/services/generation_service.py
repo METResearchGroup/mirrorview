@@ -9,6 +9,7 @@ from app.db.uow import UnitOfWork
 from app.db.repos.interfaces import GenerationRepo, SubmissionRepo
 from app.schemas import FlipResponse, GenerateResponseRequest
 from fastapi import HTTPException
+from ml_tooling.llm.config.model_registry import ModelConfigRegistry
 
 
 class LLMClient(Protocol):
@@ -37,6 +38,9 @@ class GenerationService:
         messages: list[dict[str, Any]],
     ) -> FlipResponse:
         submission = req.submission
+        selected_model_id = submission.model_id
+        model_config = ModelConfigRegistry.get_model_config(selected_model_id)
+        litellm_route = model_config.get_litellm_route()
 
         start = time.monotonic()
         timeout_s = 30
@@ -46,7 +50,7 @@ class GenerationService:
                     lambda: self._llm.structured_completion(
                         messages=messages,
                         response_model=FlipResponse,
-                        model=None,
+                        model=selected_model_id,
                     ),
                     abandon_on_cancel=True,
                 )
@@ -59,8 +63,9 @@ class GenerationService:
             await self._generations.add(
                 submission_id=submission.id,
                 flip=flip,
-                provider=None,
-                model_name=None,
+                provider=model_config.provider_name,
+                model_id=selected_model_id,
+                model_name=litellm_route,
                 prompt_name=None,
                 prompt_version=None,
                 latency_ms=latency_ms,

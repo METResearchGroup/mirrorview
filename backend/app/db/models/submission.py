@@ -25,6 +25,7 @@ class Submission(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     client_created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     input_text: Mapped[str] = mapped_column(Text, nullable=False)
+    selected_model_id: Mapped[str] = mapped_column(Text, nullable=False)
     server_received_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

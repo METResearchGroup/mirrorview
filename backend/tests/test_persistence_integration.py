@@ -78,6 +78,7 @@ class TestPersistenceIntegration:
                         "id": submission_id,
                         "created_at": "2026-02-03T00:00:00.000Z",
                         "input_text": "hello",
+                        "model_id": "gpt-5-nano",
                     },
                 }
 
@@ -100,22 +101,25 @@ class TestPersistenceIntegration:
                 submissions_row = asyncio.run(
                     _fetch_one(
                         database_url,
-                        "select count(*) from submissions where id = :id",
+                        "select count(*), max(selected_model_id) from submissions where id = :id",
                         {"id": submission_id},
                     )
                 )
                 expected_submissions = 1
                 assert submissions_row[0] == expected_submissions
+                assert submissions_row[1] == "gpt-5-nano"
 
                 generations_row = asyncio.run(
                     _fetch_one(
                         database_url,
-                        "select count(*) from generations where submission_id = :id",
+                        "select count(*), max(model_id), max(model_name) from generations where submission_id = :id",
                         {"id": submission_id},
                     )
                 )
                 expected_generations = 1
                 assert generations_row[0] == expected_generations
+                assert generations_row[1] == "gpt-5-nano"
+                assert generations_row[2] == "gpt-5-nano"
 
                 thumbs_row = asyncio.run(
                     _fetch_one(

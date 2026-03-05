@@ -21,6 +21,7 @@ class GenerationRepo(ABC):
         submission_id: uuid.UUID,
         flip: FlipResponse,
         provider: str | None = None,
+        model_id: str | None = None,
         model_name: str | None = None,
         prompt_name: str | None = None,
         prompt_version: str | None = None,

@@ -40,6 +40,7 @@ class Generation(Base):
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
 
     provider: Mapped[str | None] = mapped_column(Text, nullable=True)
+    model_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     prompt_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(Text, nullable=True)

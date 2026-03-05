@@ -13,6 +13,12 @@ class SubmissionContext(BaseModel):
         max_length=4000,
         description="Original user text at flip time.",
     )
+    model_id: str = Field(
+        default="gpt-5-nano",
+        min_length=1,
+        max_length=128,
+        description="Public model identifier selected at generation time.",
+    )
 
 
 class AckResponse(BaseModel):
@@ -50,4 +56,15 @@ class FlipResponse(BaseModel):
         ...,
         description="Specific features considered when flipping (tone, framing, issues, rhetoric, etc.).",
     )
+
+
+class ModelOption(BaseModel):
+    model_id: str = Field(..., description="Public model identifier.")
+    display_name: str = Field(..., description="Model display name for UI.")
+    provider: str = Field(..., description="Provider family for this model.")
+
+
+class ModelCatalogResponse(BaseModel):
+    default_model_id: str = Field(..., description="Default model identifier used by the backend.")
+    models: list[ModelOption] = Field(..., description="Available models for user selection.")
 

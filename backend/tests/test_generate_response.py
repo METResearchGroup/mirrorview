@@ -97,3 +97,65 @@ def test_cors_allows_configured_origin(monkeypatch):
     assert res.status_code in (200, 204)
     assert res.headers.get("access-control-allow-origin") == "https://example.com"
 
+
+def test_models_endpoint_returns_default_and_options(monkeypatch):
+    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+
+    from fastapi.testclient import TestClient
+
+    client = TestClient(main.app)
+    res = client.get("/models")
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["default_model_id"] == "gpt-5-nano"
+    model_ids = {model["model_id"] for model in payload["models"]}
+    assert "gpt-5-nano" in model_ids
+    assert "openai-gpt-4o-mini" in model_ids
+    assert "gpt-4" not in model_ids
+
+
+def test_generate_response_rejects_unknown_model_id(monkeypatch):
+    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+
+    from fastapi.testclient import TestClient
+
+    client = TestClient(main.app)
+    submission_id = str(uuid4())
+    res = client.post(
+        "/generate_response",
+        json={
+            "text": "hello",
+            "submission": {
+                "id": submission_id,
+                "created_at": "2026-02-03T00:00:00.000Z",
+                "input_text": "hello",
+                "model_id": "does-not-exist",
+            },
+        },
+    )
+    assert res.status_code == 400
+    assert "Unknown model_id" in res.json()["error"]["message"]
+
+
+def test_generate_response_rejects_unavailable_model_id(monkeypatch):
+    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+
+    from fastapi.testclient import TestClient
+
+    client = TestClient(main.app)
+    submission_id = str(uuid4())
+    res = client.post(
+        "/generate_response",
+        json={
+            "text": "hello",
+            "submission": {
+                "id": submission_id,
+                "created_at": "2026-02-03T00:00:00.000Z",
+                "input_text": "hello",
+                "model_id": "gpt-4",
+            },
+        },
+    )
+    assert res.status_code == 400
+    assert "Model is not available" in res.json()["error"]["message"]
+

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from backend.lib.constants import ROOT_DIR
+from lib.constants import ROOT_DIR
 from dotenv import load_dotenv
 
 

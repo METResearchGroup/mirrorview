@@ -18,15 +18,15 @@ class TestGenerationServiceGenerate:
             id=uuid.uuid4(),
             created_at="2026-02-03T00:00:00.000Z",
             input_text="hello",
+            model_id="gpt-5-nano",
         )
         req = GenerateResponseRequest(text="hello", submission=submission)
         messages = [{"role": "user", "content": "hello"}]
 
         expected = FlipResponse(flipped_text="hello (flipped)", explanation="because")
 
-        class _FakeLLM:
-            def structured_completion(self, messages, response_model, model=None):
-                return response_model(**expected.model_dump())
+        fake_llm = mocker.Mock()
+        fake_llm.structured_completion.return_value = expected
 
         submissions_repo = mocker.AsyncMock()
         generations_repo = mocker.AsyncMock()
@@ -41,7 +41,7 @@ class TestGenerationServiceGenerate:
 
         svc = GenerationService(
             uow=_UoW(),
-            llm=_FakeLLM(),
+            llm=fake_llm,
             submissions=submissions_repo,
             generations=generations_repo,
         )
@@ -53,5 +53,15 @@ class TestGenerationServiceGenerate:
         assert result == expected
         assert entered_tx["value"] is True
         submissions_repo.upsert.assert_awaited_once()
+        fake_llm.structured_completion.assert_called_once_with(
+            messages=messages,
+            response_model=FlipResponse,
+            model="gpt-5-nano",
+        )
         generations_repo.add.assert_awaited_once()
+        kwargs = generations_repo.add.await_args.kwargs
+        assert kwargs["submission_id"] == submission.id
+        assert kwargs["provider"] == "openai"
+        assert kwargs["model_id"] == "gpt-5-nano"
+        assert kwargs["model_name"] == "gpt-5-nano"
 
