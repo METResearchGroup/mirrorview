@@ -44,6 +44,10 @@ class BaseLLMProvider(LLMProviderProtocol, ABC):
     ) -> dict[str, Any] | None:
         return None
 
+    def supports_json_mode(self) -> bool:
+        """Return True if the provider accepts `response_format={"type": "json_object"}`."""
+        return False
+
     def prepare_completion_kwargs(
         self,
         model: str,

@@ -73,7 +73,7 @@ models:
     supported_models:
       "claude-4.5-sonnet":
         display_name: "Claude 4.5 Sonnet"
-        litellm_route: "claude-sonnet-4-20250514"
+        litellm_route: "anthropic/claude-sonnet-4-5-20250929"
         available: true
         llm_inference_kwargs: {}
 

@@ -25,6 +25,10 @@ def test_route_resolution_uses_public_model_id_mapping():
         ModelConfigRegistry.resolve_litellm_route("claude-4.5-haiku")
         == "openrouter/anthropic/claude-haiku-4.5"
     )
+    assert (
+        ModelConfigRegistry.resolve_litellm_route("claude-4.5-sonnet")
+        == "anthropic/claude-sonnet-4-5-20250929"
+    )
 
 
 def test_model_exists_and_availability():

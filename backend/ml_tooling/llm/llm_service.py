@@ -1,6 +1,8 @@
 """Service for interacting with LLM providers via LiteLLM."""
 
+import json
 import threading
+from enum import Enum
 from typing import Any, TypeVar
 
 import litellm
@@ -14,6 +16,12 @@ from ml_tooling.llm.exceptions import (
 from ml_tooling.llm.providers.base import LLMProviderProtocol
 from ml_tooling.llm.providers.registry import LLMProviderRegistry
 from ml_tooling.llm.retry import retry_llm_completion
+
+
+class ResponseMode(Enum):
+    JSON_SCHEMA = "json_schema"
+    JSON_OBJECT = "json_object"
+    NONE = "none"
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -98,15 +106,19 @@ class LLMService:
             model_config_dict = {"kwargs": {}}
 
         # Format structured output if needed (delegates to provider)
+        response_mode = ResponseMode.NONE
         response_format_dict = None
         if response_format is not None:
             response_format_dict = provider.format_structured_output(
                 response_format, model_config_dict
             )
-            if response_format_dict is None:
-                raise ValueError(
-                    f"Provider {provider.provider_name!r} does not support structured outputs for model {model!r}."
-                )
+            if response_format_dict is not None:
+                response_mode = ResponseMode.JSON_SCHEMA
+            elif provider.supports_json_mode():
+                response_format_dict = {"type": "json_object"}
+                response_mode = ResponseMode.JSON_OBJECT
+            else:
+                response_mode = ResponseMode.NONE
 
         # Prepare completion kwargs using provider-specific logic
         # Note: messages is passed as placeholder empty list here, will be set by caller
@@ -118,7 +130,7 @@ class LLMService:
             **kwargs,  # User kwargs override config kwargs
         )
 
-        return completion_kwargs, response_format_dict
+        return completion_kwargs, response_format_dict, response_mode
 
     def _chat_completion(
         self,
@@ -148,12 +160,13 @@ class LLMService:
         Raises:
             LLMException: Standardized internal exception (LiteLLM exceptions are converted)
         """
-        completion_kwargs, _ = self._prepare_completion_kwargs(
+        completion_kwargs, _, response_mode = self._prepare_completion_kwargs(
             model=model,
             provider=provider,
             response_format=response_format,
             **kwargs,
         )
+        messages = self._apply_json_instruction_if_needed(messages, response_mode)
         completion_kwargs["messages"] = messages
         # Avoid global LiteLLM state; use the provider instance's key per request.
         completion_kwargs["api_key"] = provider.api_key
@@ -205,7 +218,7 @@ class LLMService:
             TODO: Consider supporting partial results for batch completions instead of
                 all-or-nothing error handling.
         """
-        completion_kwargs, _ = self._prepare_completion_kwargs(
+        completion_kwargs, _, _ = self._prepare_completion_kwargs(
             model=model,
             provider=provider,
             response_format=response_format,
@@ -376,6 +389,64 @@ class LLMService:
             **kwargs,
         )
 
+    def _apply_json_instruction_if_needed(
+        self, messages: list[dict], response_mode: ResponseMode
+    ) -> list[dict]:
+        if response_mode == ResponseMode.JSON_SCHEMA:
+            return messages
+
+        instruction = {
+            "role": "system",
+            "content": (
+                "Return a single JSON object that matches the expected schema: "
+                "`flipped_text` (string) and `explanation` (string). "
+                "Do not include prose, markdown, or code fences outside the JSON."
+            ),
+        }
+
+        if not messages:
+            return [instruction]
+
+        if messages[0].get("role") == "system":
+            return [messages[0], instruction] + messages[1:]
+        return [instruction] + messages
+
+    def _sanitize_response_content(self, content: str) -> str:
+        sanitized = self._strip_code_fence(content)
+        candidate = self._extract_json_candidate(sanitized)
+        if self._is_valid_json(candidate):
+            return candidate
+        if self._is_valid_json(sanitized):
+            return sanitized
+        return content.strip()
+
+    def _strip_code_fence(self, content: str) -> str:
+        stripped = content.strip()
+        if stripped.startswith("```"):
+            fence_end = stripped.find("\n")
+            if fence_end != -1:
+                stripped = stripped[fence_end + 1 :]
+            if stripped.endswith("```"):
+                stripped = stripped[: -3]
+        return stripped.strip()
+
+    def _extract_json_candidate(self, content: str) -> str:
+        start = content.find("{")
+        end = content.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            return content
+        candidate = content[start : end + 1]
+        if self._is_valid_json(candidate):
+            return candidate
+        return content
+
+    def _is_valid_json(self, text: str) -> bool:
+        try:
+            json.loads(text)
+            return True
+        except json.JSONDecodeError:
+            return False
+
     def handle_completion_response(
         self,
         response: ModelResponse,
@@ -385,7 +456,8 @@ class LLMService:
         content: str | None = response.choices[0].message.content  # type: ignore
         if content is None:
             raise ValueError("Response content is None. Expected structured output from LLM.")
-        return response_model.model_validate_json(content)
+        sanitized = self._sanitize_response_content(content)
+        return response_model.model_validate_json(sanitized)
 
     def handle_batch_completion_responses(
         self,
@@ -414,7 +486,8 @@ class LLMService:
                 raise ValueError(
                     "Response content is None. Expected structured output from LLM."
                 )
-            contents.append(content)
+            sanitized = self._sanitize_response_content(content)
+            contents.append(sanitized)
 
         return [response_model.model_validate_json(content) for content in contents]
 
