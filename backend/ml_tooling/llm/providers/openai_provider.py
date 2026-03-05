@@ -1,19 +1,16 @@
 """OpenAI provider implementation."""
 
-from ml_tooling.llm.providers.base import LLMProviderProtocol
-from ml_tooling.llm.providers.provider_mixins import (
-    EnvApiKeyMixin,
-    SupportsModelMixin,
-    StrictSchemaCompletionMixin,
+from typing import Any
+
+from pydantic import BaseModel
+
+from ml_tooling.llm.providers.openai_structured_output import (
+    format_openai_strict_json_schema,
 )
+from ml_tooling.llm.providers.provider_base import BaseLLMProvider
 
 
-class OpenAIProvider(
-    EnvApiKeyMixin,
-    StrictSchemaCompletionMixin,
-    SupportsModelMixin,
-    LLMProviderProtocol,
-):
+class OpenAIProvider(BaseLLMProvider):
     """OpenAI provider implementation with shared helpers."""
 
     API_KEY_ENV_VAR = "OPENAI_API_KEY"
@@ -31,3 +28,10 @@ class OpenAIProvider(
             "gpt-4o-mini-2024-07-18",
             "gpt-4",
         ]
+
+    def format_structured_output(
+        self,
+        response_model: type[BaseModel],
+        model_config: dict[str, Any],
+    ) -> dict[str, Any]:
+        return format_openai_strict_json_schema(response_model)

@@ -103,6 +103,10 @@ class LLMService:
             response_format_dict = provider.format_structured_output(
                 response_format, model_config_dict
             )
+            if response_format_dict is None:
+                raise ValueError(
+                    f"Provider {provider.provider_name!r} does not support structured outputs for model {model!r}."
+                )
 
         # Prepare completion kwargs using provider-specific logic
         # Note: messages is passed as placeholder empty list here, will be set by caller
