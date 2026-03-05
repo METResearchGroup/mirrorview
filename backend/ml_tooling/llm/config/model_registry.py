@@ -192,6 +192,19 @@ class ModelConfigRegistry:
             return cls._config or {}
 
     @classmethod
+    def _configured_model_ids(cls) -> set[str]:
+        """Return all model identifiers defined in the YAML configuration."""
+        config = cls._load_config()
+        configured_ids: set[str] = set()
+        for provider_config in config.get("models", {}).values():
+            if not isinstance(provider_config, dict):
+                continue
+            supported_models = provider_config.get("supported_models", {})
+            if isinstance(supported_models, dict):
+                configured_ids.update(supported_models.keys())
+        return configured_ids
+
+    @classmethod
     def get_model_config(cls, model_identifier: str) -> ModelConfig:
         """Get ModelConfig for a specific model identifier.
 
@@ -224,6 +237,8 @@ class ModelConfigRegistry:
     def model_exists(cls, model_identifier: str) -> bool:
         """Return whether a model identifier is configured and provider-supported."""
         try:
+            if model_identifier not in cls._configured_model_ids():
+                return False
             cls.get_model_config(model_identifier)
             return True
         except (ValueError, FileNotFoundError):
@@ -309,6 +324,7 @@ class ModelConfigRegistry:
 
         Raises:
             KeyError: If default_model is not found in the default configuration
+            ValueError: If the configured default_model does not exist or is unavailable
         """
         config = cls._load_config()
         default_config = config.get("models", {}).get("default", {})
