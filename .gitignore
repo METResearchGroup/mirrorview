@@ -4,3 +4,4 @@
 *__pycache__*
 *.gitmodules
 *ai_tools*
+.DS_Store
