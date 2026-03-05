@@ -24,7 +24,7 @@ class ModelConfig:
         """Initialize ModelConfig for a specific model.
 
         Args:
-            model_identifier: Model identifier (e.g., 'gpt-4o-mini', 'groq/llama3-8b-8192')
+            model_identifier: Model identifier (e.g., 'gpt-4o-mini', 'openrouter/anthropic/claude-haiku-4.5')
             config_data: Full configuration dictionary from YAML file
         """
         self.model_identifier = model_identifier
@@ -178,7 +178,7 @@ class ModelConfigRegistry:
         """Get ModelConfig for a specific model identifier.
 
         Args:
-            model_identifier: Model identifier (e.g., 'gpt-4o-mini', 'groq/llama3-8b-8192')
+            model_identifier: Model identifier (e.g., 'gpt-4o-mini', 'openrouter/anthropic/claude-haiku-4.5')
 
         Returns:
             ModelConfig instance for the specified model
@@ -215,7 +215,7 @@ class ModelConfigRegistry:
         """List all model identifiers for a specific provider.
 
         Args:
-            provider_name: Provider name (e.g., 'openai', 'gemini', 'groq')
+            provider_name: Provider name (e.g., 'openai', 'anthropic', 'openrouter')
 
         Returns:
             List of model identifiers supported by this provider

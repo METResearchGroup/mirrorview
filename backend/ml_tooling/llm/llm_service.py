@@ -47,7 +47,8 @@ class LLMService:
         """Get the provider instance for a given model.
 
         Args:
-            model: Model identifier (e.g., 'gpt-4o-mini', 'groq/llama3-8b-8192')
+            model: Model identifier (e.g., provider-config key like 'gpt-4o-mini-2024-07-18'
+                or 'claude-4.5-haiku')
 
         Returns:
             Provider instance that supports the given model
@@ -89,7 +90,8 @@ class LLMService:
             model_config_obj = ModelConfigRegistry.get_model_config(model)
             # Convert ModelConfig to dict format expected by providers
             model_config_dict = {
-                "kwargs": model_config_obj.get_all_llm_inference_kwargs()
+                "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
+                "litellm_route": model_config_obj.get_litellm_route(),
             }
         except (ValueError, FileNotFoundError):
             # Model not in config - use empty config dict
@@ -101,6 +103,10 @@ class LLMService:
             response_format_dict = provider.format_structured_output(
                 response_format, model_config_dict
             )
+            if response_format_dict is None:
+                raise ValueError(
+                    f"Provider {provider.provider_name!r} does not support structured outputs for model {model!r}."
+                )
 
         # Prepare completion kwargs using provider-specific logic
         # Note: messages is passed as placeholder empty list here, will be set by caller

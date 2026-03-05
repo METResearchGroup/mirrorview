@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-from lib.load_env_vars import EnvVarsContainer
+from lib.load_env_vars import settings
 
 
 _engine: AsyncEngine | None = None
@@ -12,13 +12,8 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
 def is_persistence_enabled() -> bool:
-    """Return whether DB persistence is enabled via env config.
-
-    Accepts common truthy values (case-insensitive): 1, true, t, yes, y, on.
-    All other values (including empty / unset) are treated as false.
-    """
-    raw = str(EnvVarsContainer.get_env_var("PERSISTENCE_ENABLED") or "").strip().lower()
-    return raw in {"1", "true", "t", "yes", "y", "on"}
+    """Return whether DB persistence is enabled via env config."""
+    return settings().persistence_enabled
 
 
 def init_engine(database_url: str) -> None:

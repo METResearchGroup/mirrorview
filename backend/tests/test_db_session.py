@@ -1,6 +1,7 @@
 import pytest
 
 from app.db.session import is_persistence_enabled
+from lib.load_env_vars import settings
 
 
 @pytest.mark.parametrize(
@@ -29,9 +30,6 @@ def test_is_persistence_enabled_parses_truthy_values(monkeypatch: pytest.MonkeyP
     else:
         monkeypatch.setenv("PERSISTENCE_ENABLED", raw)
 
-    # Reset EnvVarsContainer singleton so env overrides are respected.
-    from lib.load_env_vars import EnvVarsContainer
-
-    EnvVarsContainer._instance = None  # noqa: SLF001 (test-only reset)
+    settings.cache_clear()
     assert is_persistence_enabled() is expected
 
