@@ -27,7 +27,7 @@ class LLMProviderRegistry:
         """Get provider for a given model.
 
         Args:
-            model: Model identifier (e.g., 'gpt-4o-mini', 'openrouter/anthropic/claude-haiku-4.5')
+            model: Model identifier (e.g., 'gpt-4o-mini', 'claude-4.5-haiku')
 
         Returns:
             Provider instance that supports the given model
