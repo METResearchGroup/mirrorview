@@ -41,6 +41,17 @@ type ModelCatalogResponse = {
   models: ModelOption[];
 };
 
+type Example = {
+  id: string;
+  title: string;
+  input_text: string;
+  tags?: string[];
+};
+
+type ExampleSuggestionsResponse = {
+  examples: Example[];
+};
+
 const EXPLANATION_COLLAPSE_THRESHOLD_CHARS = 400;
 const FALLBACK_MODEL_ID = "gpt-5-nano";
 
@@ -75,6 +86,9 @@ export default function Home() {
   const [modelOptions, setModelOptions] = React.useState<ModelOption[]>([]);
   const [selectedModelId, setSelectedModelId] = React.useState(FALLBACK_MODEL_ID);
   const [isLoadingModels, setIsLoadingModels] = React.useState(false);
+  const [exampleSuggestions, setExampleSuggestions] = React.useState<Example[]>([]);
+  const [isLoadingExamples, setIsLoadingExamples] = React.useState(false);
+  const [isLoadingRandomExample, setIsLoadingRandomExample] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -85,6 +99,81 @@ export default function Home() {
     () => (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, ""),
     [],
   );
+
+  const applyExample = React.useCallback(
+    (example: Example) => {
+      setInputText(example.input_text);
+      setFlippedText(null);
+      setExplanation(null);
+      setIsExplanationOpen(true);
+      setFeedback(null);
+      setCustomVersion("");
+      setSubmission(null);
+    },
+    [
+      setInputText,
+      setFlippedText,
+      setExplanation,
+      setIsExplanationOpen,
+      setFeedback,
+      setCustomVersion,
+      setSubmission,
+    ],
+  );
+
+  const loadExampleSuggestions = React.useCallback(async () => {
+    const baseUrl = getBaseUrl();
+    if (!baseUrl) {
+      return;
+    }
+
+    setIsLoadingExamples(true);
+    try {
+      const res = await fetch(`${baseUrl}/examples/suggestions?count=3`);
+      if (!res.ok) {
+        return;
+      }
+      const data = (await res.json()) as ExampleSuggestionsResponse;
+      setExampleSuggestions(Array.isArray(data?.examples) ? data.examples : []);
+    } catch {
+      // ignore — examples are optional
+    } finally {
+      setIsLoadingExamples(false);
+    }
+  }, [getBaseUrl]);
+
+  React.useEffect(() => {
+    loadExampleSuggestions();
+  }, [loadExampleSuggestions]);
+
+  const fetchRandomExample = React.useCallback(async () => {
+    const baseUrl = getBaseUrl();
+    if (!baseUrl) {
+      toast.error("Service is not configured. Please try again later.");
+      return;
+    }
+
+    setIsLoadingRandomExample(true);
+    try {
+      const params = new URLSearchParams();
+      exampleSuggestions.forEach((example) => params.append("exclude_id", example.id));
+      const query = params.toString();
+      const url = `${baseUrl}/examples/random${query ? `?${query}` : ""}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        toast.error(await extractErrorMessage(res, res.status));
+        return;
+      }
+      const data = (await res.json()) as Example;
+      if (data?.input_text) {
+        applyExample(data);
+      }
+    } catch {
+      toast.error("Could not load an example right now. Please try again.");
+    } finally {
+      setIsLoadingRandomExample(false);
+    }
+  }, [applyExample, exampleSuggestions, getBaseUrl]);
 
   React.useEffect(() => {
     async function loadModels() {
@@ -368,6 +457,38 @@ export default function Home() {
                   ))
                 )}
               </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Examples</Label>
+              <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto py-1 whitespace-nowrap">
+                {isLoadingExamples ? (
+                  <div className="flex-shrink-0 rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                    Loading examples…
+                  </div>
+                ) : (
+                  exampleSuggestions.map((example) => (
+                    <Button
+                      key={example.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => applyExample(example)}
+                      disabled={isLoadingRandomExample}
+                      className="flex-shrink-0 text-[0.75rem] py-1 px-2"
+                    >
+                      {example.title}
+                    </Button>
+                  ))
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={fetchRandomExample}
+                  disabled={isLoadingRandomExample || isLoadingExamples}
+                  className="flex-shrink-0 text-[0.75rem] py-1 px-2"
+                >
+                  {isLoadingRandomExample ? "Loading…" : "Get a random example"}
+                </Button>
+              </div>
             </div>
             <Textarea
               id="inputText"

@@ -68,3 +68,19 @@ class ModelCatalogResponse(BaseModel):
     default_model_id: str = Field(..., description="Default model identifier used by the backend.")
     models: list[ModelOption] = Field(..., description="Available models for user selection.")
 
+
+class ExampleResponse(BaseModel):
+    id: str = Field(..., description="Stable identifier for the example.")
+    title: str = Field(..., description="UI-friendly title for the example.")
+    input_text: str = Field(
+        ...,
+        min_length=1,
+        max_length=4000,
+        description="Example post text that can be flipped.",
+    )
+    tags: list[str] = Field(default_factory=list, description="Optional tags for filtering examples.")
+
+
+class ExampleSuggestionsResponse(BaseModel):
+    examples: list[ExampleResponse] = Field(..., description="Randomized suggestions surfaced to the UI.")
+

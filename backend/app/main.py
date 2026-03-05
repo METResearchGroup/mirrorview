@@ -11,7 +11,7 @@ from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.routers import feedback_router, generate_router
+from app.api.routers import examples_router, feedback_router, generate_router
 from app.db.migrate import run_migrations_to_head
 from app.db.session import dispose_engine, init_engine, is_persistence_enabled
 from app.security import (
@@ -265,3 +265,4 @@ def health() -> dict[str, str]:
 
 app.include_router(generate_router)
 app.include_router(feedback_router)
+app.include_router(examples_router)

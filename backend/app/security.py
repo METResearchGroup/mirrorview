@@ -94,6 +94,12 @@ def build_rate_limit_policy() -> dict[str, tuple[RateLimitRule, ...]]:
         "feedback_edit": _parse_rules(
             os.getenv("RATE_LIMIT_FEEDBACK_EDIT", "15/minute,120/hour")
         ),
+        "examples_suggestions": _parse_rules(
+            os.getenv("RATE_LIMIT_EXAMPLES_SUGGESTIONS", "60/minute,1000/hour")
+        ),
+        "examples_random": _parse_rules(
+            os.getenv("RATE_LIMIT_EXAMPLES_RANDOM", "60/minute,1000/hour")
+        ),
     }
 
 
@@ -143,6 +149,10 @@ def _parse_rules(raw_rules: str) -> tuple[RateLimitRule, ...]:
 
 
 def resolve_rate_limit_scope(path: str) -> str | None:
+    if path == "/examples/suggestions":
+        return "examples_suggestions"
+    if path == "/examples/random":
+        return "examples_random"
     if path == "/generate_response":
         return "generate_response"
     if path == "/feedback/thumb":

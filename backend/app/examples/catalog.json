@@ -1,0 +1,32 @@
+[
+  {
+    "id": "climate-critique",
+    "title": "Climate policy critique",
+    "input_text": "The new climate policy feels like a one-size-fits-all hammer on every industry. Instead of letting businesses innovate, it slams them with rigid quotas that will only send jobs overseas.",
+    "tags": ["climate", "regulation"]
+  },
+  {
+    "id": "housing-advocate",
+    "title": "Housing affordability",
+    "input_text": "Our city needs more affordable housing, but the current plan prioritizes luxury towers that only line the pockets of developers. We should cap permit fees, expand transit-oriented development, and protect the renters already living in the neighborhood.",
+    "tags": ["housing", "local"]
+  },
+  {
+    "id": "tech-privacy",
+    "title": "Tech privacy concerns",
+    "input_text": "I keep seeing new privacy opt-ins that make it impossible for regular users to keep their data private. Companies should ship products that assume privacy by default, not trick people with dense consent walls.",
+    "tags": ["technology", "privacy"]
+  },
+  {
+    "id": "education-reform",
+    "title": "Education reform",
+    "input_text": "Standardized tests have turned classrooms into test prep factories. Let’s redirect those dollars toward smaller class sizes and meaningful project-based learning that actually prepares kids for the workplace.",
+    "tags": ["education", "policy"]
+  },
+  {
+    "id": "travel-neutrality",
+    "title": "Travel safety",
+    "input_text": "Tourism boards keep telling us the city is safe, but I saw three new security checkpoints pop up overnight. We need transparent reporting on crime data and smarter lighting instead of catchy slogans.",
+    "tags": ["travel", "public safety"]
+  }
+]
