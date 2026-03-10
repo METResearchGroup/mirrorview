@@ -444,7 +444,9 @@ class LLMService:
         except (ValueError, FileNotFoundError):
             model_config_dict = {"kwargs": {}}
         try:
-            response_format_dict = provider.format_structured_output(response_model, model_config_dict)
+            response_format_dict = provider.format_structured_output(
+                response_model, model_config_dict
+            )
         except Exception:
             response_format_dict = None
 

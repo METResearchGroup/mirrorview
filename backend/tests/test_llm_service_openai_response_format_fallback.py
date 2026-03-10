@@ -34,7 +34,7 @@ def test_openai_model_can_fall_back_when_response_format_rejected(
         assert isinstance(kwargs_dict.get("messages"), list)
         assert kwargs_dict["messages"][0]["role"] == "system"
         assert "Return ONLY valid JSON" in kwargs_dict["messages"][0]["content"]
-        content = "{\"flipped_text\":\"ok\",\"explanation\":\"ok\"}"
+        content = '{"flipped_text":"ok","explanation":"ok"}'
         return ModelResponse(choices=[{"message": {"content": content}}])
 
     import ml_tooling.llm.llm_service as llm_service_mod
