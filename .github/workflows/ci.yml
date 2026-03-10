@@ -45,11 +45,8 @@ jobs:
         with:
           version: "latest"
 
-      - name: Resolve deps (create/refresh uv.lock)
-        run: uv lock
-
       - name: Install dependencies
-        run: uv sync --extra test
+        run: uv sync --extra test --locked
 
       - name: Add project directory to PYTHONPATH
         run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> $GITHUB_ENV
@@ -63,7 +60,16 @@ jobs:
 
       - name: Run complexipy on changed files
         if: steps.changed.outputs.any_changed == 'true'
-        run: uv run complexipy ${{ steps.changed.outputs.all_changed_files }} --max-complexity-allowed 999
+        run: |
+          changed="${{ steps.changed.outputs.all_changed_files }}"
+          if [ -n "$changed" ]; then
+            mapfile -t files <<< "$changed"
+            rel_paths=()
+            for f in "${files[@]}"; do
+              rel_paths+=("${f#backend/}")
+            done
+            uv run complexipy "${rel_paths[@]}" --max-complexity-allowed 999
+          fi
 
       - name: Run Ruff linting
         run: uv run ruff check .
@@ -76,4 +82,3 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
-
