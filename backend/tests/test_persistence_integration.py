@@ -62,7 +62,6 @@ class TestPersistenceIntegration:
                 import app.di.providers as providers
                 import app.main as main
 
-                importlib.reload(providers)
                 importlib.reload(main)
 
                 class _FakeLLM:
@@ -154,7 +153,6 @@ class TestPersistenceIntegration:
                 import app.di.providers as providers
                 import app.main as main
 
-                importlib.reload(providers)
                 importlib.reload(main)
 
                 class _FakeLLM:
@@ -191,4 +189,3 @@ class TestPersistenceIntegration:
                 main.app.dependency_overrides.clear()
         except (DockerException, FileNotFoundError) as e:
             pytest.skip(f"Docker not available for integration test: {e}")
-

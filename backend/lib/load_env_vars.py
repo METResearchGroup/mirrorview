@@ -20,6 +20,12 @@ class Settings(BaseModel):
     run_mode: str
     persistence_enabled: bool
     database_url: str | None
+    migration_database_url: str | None
+    run_migrations_on_startup: bool
+    auth_required: bool
+    supabase_url: str | None
+    supabase_jwt_secret: str | None
+    supabase_jwt_audience: str | None
     api_keys: dict[str, str | None]
 
     model_config = ConfigDict(frozen=True)
@@ -36,6 +42,16 @@ class Settings(BaseModel):
         if not url:
             raise ValueError("DATABASE_URL is required when persistence is enabled.")
         return url
+
+    def get_migration_database_url(self) -> str:
+        """Return DB URL used for migrations.
+
+        Prefer MIGRATION_DATABASE_URL when provided; otherwise fall back to DATABASE_URL.
+        """
+        url = (self.migration_database_url or "").strip()
+        if url:
+            return url
+        return self.require_database_url()
 
     def require_api_key(self, env_var: str) -> str:
         value = (self.api_keys.get(env_var) or "").strip()
@@ -54,12 +70,24 @@ def _build_settings() -> Settings:
     run_mode: str = _load_run_mode()
     persistence_enabled: bool = _load_persistence_enabled(run_mode)
     database_url: str | None = _load_database_url()
+    migration_database_url: str | None = _load_migration_database_url()
+    run_migrations_on_startup: bool = _load_run_migrations_on_startup(run_mode)
+    auth_required: bool = _load_auth_required(run_mode)
+    supabase_url: str | None = _load_supabase_url()
+    supabase_jwt_secret: str | None = _load_supabase_jwt_secret()
+    supabase_jwt_audience: str | None = _load_supabase_jwt_audience()
     api_keys: dict[str, str | None] = _load_api_keys()
 
     return Settings(
         run_mode=run_mode,
         persistence_enabled=persistence_enabled,
         database_url=database_url,
+        migration_database_url=migration_database_url,
+        run_migrations_on_startup=run_migrations_on_startup,
+        auth_required=auth_required,
+        supabase_url=supabase_url,
+        supabase_jwt_secret=supabase_jwt_secret,
+        supabase_jwt_audience=supabase_jwt_audience,
         api_keys=api_keys,
     )
 
@@ -82,6 +110,27 @@ def _load_persistence_enabled(run_mode: str) -> bool:
 
 def _load_database_url() -> str | None:
     return os.getenv("DATABASE_URL")
+
+def _load_migration_database_url() -> str | None:
+    return os.getenv("MIGRATION_DATABASE_URL")
+
+def _load_run_migrations_on_startup(run_mode: str) -> bool:
+    default = "false" if run_mode == "prod" else "true"
+    return _is_truthy(os.getenv("RUN_MIGRATIONS_ON_STARTUP", default))
+
+def _load_auth_required(run_mode: str) -> bool:
+    # Default to secure-by-default in local/prod; tests opt out by default.
+    default = "false" if run_mode == "test" else "true"
+    return _is_truthy(os.getenv("AUTH_REQUIRED", default))
+
+def _load_supabase_url() -> str | None:
+    return os.getenv("SUPABASE_URL")
+
+def _load_supabase_jwt_secret() -> str | None:
+    return os.getenv("SUPABASE_JWT_SECRET")
+
+def _load_supabase_jwt_audience() -> str | None:
+    return os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
 
 def _load_api_keys() -> dict[str, str | None]:
     return {

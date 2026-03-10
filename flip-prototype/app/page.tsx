@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Loader2, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
+import { createClient, type Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,14 @@ type ExampleSuggestionsResponse = {
 const EXPLANATION_COLLAPSE_THRESHOLD_CHARS = 400;
 const FALLBACK_MODEL_ID = "gpt-5-nano";
 
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+
+const supabase =
+  SUPABASE_URL && SUPABASE_ANON_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
 async function extractErrorMessage(res: Response, fallbackStatus: number): Promise<string> {
   let detail = `Request failed (${fallbackStatus})`;
   try {
@@ -74,6 +83,9 @@ async function extractErrorMessage(res: Response, fallbackStatus: number): Promi
 }
 
 export default function Home() {
+  const [authReady, setAuthReady] = React.useState(false);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [email, setEmail] = React.useState("");
   const [inputText, setInputText] = React.useState("");
   const [flippedText, setFlippedText] = React.useState<string | null>(null);
   const [explanation, setExplanation] = React.useState<string | null>(null);
@@ -91,6 +103,9 @@ export default function Home() {
   const [isLoadingRandomExample, setIsLoadingRandomExample] = React.useState(false);
 
   const customTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  const accessToken = session?.access_token ?? null;
+  const userEmail = session?.user?.email ?? null;
 
   const canFlip = inputText.trim().length > 0;
   const canReset = inputText.trim() !== "" || flippedText !== null || explanation !== null;
@@ -135,6 +150,34 @@ export default function Home() {
     loadExampleSuggestions();
   }, [loadExampleSuggestions]);
 
+  React.useEffect(() => {
+    if (!supabase) {
+      setAuthReady(true);
+      return;
+    }
+
+    let active = true;
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+      })
+      .finally(() => {
+        if (!active) return;
+        setAuthReady(true);
+      });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
   const fetchRandomExample = React.useCallback(async () => {
     const baseUrl = getBaseUrl();
     if (!baseUrl) {
@@ -173,9 +216,13 @@ export default function Home() {
 
       setIsLoadingModels(true);
       try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (accessToken) {
+          headers.Authorization = `Bearer ${accessToken}`;
+        }
         const res = await fetch(`${baseUrl}/models`, {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
+          headers,
         });
         if (!res.ok) return;
         const data = (await res.json()) as ModelCatalogResponse;
@@ -190,7 +237,43 @@ export default function Home() {
     }
 
     loadModels();
-  }, [getBaseUrl]);
+  }, [accessToken, getBaseUrl]);
+
+  async function handleSendMagicLink() {
+    if (!supabase) {
+      toast.error("Supabase Auth is not configured.");
+      return;
+    }
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) {
+      toast.error("Enter your email address.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Check your email for a sign-in link.");
+    } catch {
+      toast.error("Could not start sign-in. Please try again.");
+    }
+  }
+
+  async function handleSignOut() {
+    if (!supabase) return;
+    try {
+      await supabase.auth.signOut();
+      toast.success("Signed out.");
+    } catch {
+      toast.error("Could not sign out.");
+    }
+  }
 
   async function handleFlip() {
     const trimmed = inputText.trim();
@@ -202,6 +285,10 @@ export default function Home() {
     const baseUrl = getBaseUrl();
     if (!baseUrl) {
       toast.error("Service is not configured. Please try again later.");
+      return;
+    }
+    if (!accessToken) {
+      toast.error("Please sign in to flip posts.");
       return;
     }
 
@@ -217,7 +304,7 @@ export default function Home() {
 
       const res = await fetch(`${baseUrl}/generate_response`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ text: trimmed, submission: nextSubmission }),
       });
 
@@ -277,13 +364,17 @@ export default function Home() {
       toast.error("Service is not configured. Please try again later.");
       return;
     }
+    if (!accessToken) {
+      toast.error("Please sign in to submit feedback.");
+      return;
+    }
 
     setIsSubmittingThumb(true);
     try {
       setFeedback("up");
       const res = await fetch(`${baseUrl}/feedback/thumb`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           submission,
           vote: "up",
@@ -318,13 +409,17 @@ export default function Home() {
       toast.error("Service is not configured. Please try again later.");
       return;
     }
+    if (!accessToken) {
+      toast.error("Please sign in to submit feedback.");
+      return;
+    }
 
     setIsSubmittingThumb(true);
     try {
       setFeedback("down");
       const res = await fetch(`${baseUrl}/feedback/thumb`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           submission,
           vote: "down",
@@ -367,11 +462,15 @@ export default function Home() {
       toast.error("Service is not configured. Please try again later.");
       return;
     }
+    if (!accessToken) {
+      toast.error("Please sign in to submit feedback.");
+      return;
+    }
 
     try {
       const res = await fetch(`${baseUrl}/feedback/edit`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           submission,
           edited_text: trimmed,
@@ -417,6 +516,52 @@ export default function Home() {
             Paste a post and we’ll generate a flipped version.
           </p>
         </header>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>
+              Sign in with Supabase Auth to use the API.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!supabase && (
+              <div className="text-sm text-muted-foreground">
+                Supabase is not configured. Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+                <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
+              </div>
+            )}
+            {supabase && !authReady && (
+              <div className="text-sm text-muted-foreground">Checking session…</div>
+            )}
+            {supabase && authReady && session && (
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                  Signed in{userEmail ? ` as ${userEmail}` : ""}.
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={handleSignOut}>
+                  Sign out
+                </Button>
+              </div>
+            )}
+            {supabase && authReady && !session && (
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  autoComplete="email"
+                />
+                <Button type="button" onClick={handleSendMagicLink}>
+                  Send magic link
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

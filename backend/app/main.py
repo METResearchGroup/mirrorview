@@ -43,9 +43,26 @@ def _parse_cors_origins() -> list[str]:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if settings().auth_required:
+        supabase_url = (settings().supabase_url or "").strip()
+        jwt_secret = (settings().supabase_jwt_secret or "").strip()
+        aud = (settings().supabase_jwt_audience or "").strip()
+        if not supabase_url:
+            raise RuntimeError("SUPABASE_URL must be set when AUTH_REQUIRED=true.")
+        if not jwt_secret:
+            raise RuntimeError("SUPABASE_JWT_SECRET must be set when AUTH_REQUIRED=true.")
+        if not aud:
+            raise RuntimeError("SUPABASE_JWT_AUDIENCE must be set when AUTH_REQUIRED=true.")
+
     if is_persistence_enabled():
         database_url = settings().require_database_url()
-        await anyio.to_thread.run_sync(run_migrations_to_head, database_url, abandon_on_cancel=True)
+        if settings().run_migrations_on_startup:
+            migration_database_url = settings().get_migration_database_url()
+            await anyio.to_thread.run_sync(
+                run_migrations_to_head,
+                migration_database_url,
+                abandon_on_cancel=True,
+            )
         init_engine(database_url)
     try:
         yield
@@ -53,7 +70,17 @@ async def lifespan(_: FastAPI):
         await dispose_engine()
 
 
-app = FastAPI(title="MirrorView Backend", version="0.2.0", lifespan=lifespan)
+_run_mode = settings().run_mode
+_docs_enabled = _run_mode != "prod"
+
+app = FastAPI(
+    title="MirrorView Backend",
+    version="0.2.0",
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
+)
 rate_limiter = EndpointRateLimiter(policy=build_rate_limit_policy())
 body_limit_bytes = get_request_body_limit_bytes()
 trust_proxy_headers = trust_proxy_headers_enabled()

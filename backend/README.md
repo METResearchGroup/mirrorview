@@ -53,12 +53,30 @@ This backend can persist generations + feedback events to **Postgres** (recommen
   - `DATABASE_URL`: SQLAlchemy async connection string.
   - Recommended (Supabase): use the **Supabase pooler** connection string from the Supabase dashboard “Connect” dialog.
 
+  - **Separate migration credentials (recommended)**
+    - `MIGRATION_DATABASE_URL`: connection string used only for migrations.
+    - If unset, migrations fall back to `DATABASE_URL`.
+
 ### Migrations
 
 From `backend/`:
 
 ```bash
 uv run alembic upgrade head
+```
+
+### Startup migrations
+
+By default:
+
+- `RUN_MODE=local`: runs migrations on startup
+- `RUN_MODE=prod`: does **not** run migrations on startup
+- `RUN_MODE=test`: does not run migrations on startup
+
+Override with:
+
+```bash
+RUN_MIGRATIONS_ON_STARTUP=true|false
 ```
 
 ### Integration tests
@@ -102,6 +120,19 @@ The API includes baseline request hardening for anonymous traffic:
   - `Referrer-Policy: no-referrer`
   - `Content-Security-Policy-Report-Only` (or enforce mode via `CSP_REPORT_ONLY=false`)
 - Standardized JSON error envelope for `4xx/5xx`.
+
+### Authentication (Supabase Auth JWT)
+
+Write endpoints require Supabase Auth JWTs by default in `local` and `prod`:
+
+```bash
+AUTH_REQUIRED=true
+SUPABASE_URL=...
+SUPABASE_JWT_SECRET=...
+SUPABASE_JWT_AUDIENCE=authenticated
+```
+
+Tests default to `AUTH_REQUIRED=false`.
 
 ### Security environment variables
 
