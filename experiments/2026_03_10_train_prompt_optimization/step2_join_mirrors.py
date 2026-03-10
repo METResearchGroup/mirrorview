@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable, Mapping
+import pandas as pd
 
-from .step1_filter_preferences import STEP1_COLUMNS
+from step1_filter_preferences import STEP1_COLUMNS
 
 MIRROR_ID_TO_COLUMN = {
     "human": "human_mirror",
@@ -18,30 +18,38 @@ STEP2_COLUMNS = [*STEP1_COLUMNS, *JOIN_COLUMNS, *MIRROR_ID_TO_COLUMN.values()]
 
 
 def join_preferences_with_mirrors(
-    preference_rows: Iterable[Mapping[str, str | None]],
-    mirrors: Iterable[Mapping[str, str]],
-) -> list[dict[str, str | None]]:
+    preferences: pd.DataFrame,
+    mirrors: pd.DataFrame,
+) -> pd.DataFrame:
     """Join preference rows to mirror texts by post_id."""
 
-    mirror_index: dict[str, Mapping[str, str]] = {
-        mirror["post_primary_key"]: mirror for mirror in mirrors
-    }
-    joined: list[dict[str, str | None]] = []
+    if "post_id" not in preferences.columns:
+        raise ValueError("Preferences data missing required column `post_id`.")
+    if "post_primary_key" not in mirrors.columns:
+        raise ValueError("Mirrors data missing required column `post_primary_key`.")
 
-    for pref in preference_rows:
-        post_id = pref.get("post_id")
-        if not post_id:
-            raise ValueError("Each preference row must contain a `post_id`.")
-        mirror = mirror_index.get(post_id)
-        if mirror is None:
-            raise KeyError(f"Post ID {post_id} missing from mirrored_posts.csv")
+    expected_mirror_cols = list(MIRROR_ID_TO_COLUMN.values())
+    missing_mirrors_cols = [c for c in [*JOIN_COLUMNS, *expected_mirror_cols] if c not in mirrors.columns]
+    if missing_mirrors_cols:
+        raise ValueError(f"Mirrors CSV missing expected columns: {missing_mirrors_cols}")
 
-        row = dict(pref)
-        row["post_primary_key"] = mirror.get("post_primary_key")
-        row["sampled_stance"] = mirror.get("sampled_stance")
-        row["sample_toxicity_type"] = mirror.get("sample_toxicity_type")
-        for mirror_column in MIRROR_ID_TO_COLUMN.values():
-            row[mirror_column] = mirror.get(mirror_column)
-        joined.append(row)
+    merged = preferences.merge(
+        mirrors.loc[:, [*JOIN_COLUMNS, *expected_mirror_cols]],
+        how="left",
+        left_on="post_id",
+        right_on="post_primary_key",
+        validate="many_to_one",
+    )
 
-    return joined
+    missing_posts = merged.loc[merged["post_primary_key"].isna(), "post_id"].dropna().unique()
+    if len(missing_posts) > 0:
+        sample = ", ".join(map(str, missing_posts[:5]))
+        raise KeyError(
+            f"{len(missing_posts)} post_id values missing from mirrored_posts.csv (e.g. {sample})"
+        )
+
+    missing_after = [col for col in STEP2_COLUMNS if col not in merged.columns]
+    if missing_after:
+        raise ValueError(f"Joined dataset missing expected columns: {missing_after}")
+
+    return merged.loc[:, STEP2_COLUMNS].reset_index(drop=True)

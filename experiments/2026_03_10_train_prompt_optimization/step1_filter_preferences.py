@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Mapping
+import pandas as pd
 
 STEP1_COLUMNS = [
     "trial_index",
@@ -18,14 +18,21 @@ STEP1_COLUMNS = [
 
 
 def filter_mirror_preference_rows(
-    rows: Iterable[Mapping[str, str]],
-) -> list[dict[str, str | None]]:
-    """Return a list of mirror-preference rows with a sane column subset."""
+    preferences: pd.DataFrame,
+) -> pd.DataFrame:
+    """Filter to mirror-preference trials and return a stable column subset."""
 
-    filtered: list[dict[str, str | None]] = []
-    for row in rows:
-        if row.get("trial_type") != "mirror-preference":
-            continue
-        filtered_row = {column: row.get(column) for column in STEP1_COLUMNS}
-        filtered.append(filtered_row)
-    return filtered
+    df = preferences.copy()
+    if "trial_index" not in df.columns and "Unnamed: 0" in df.columns:
+        df = df.rename(columns={"Unnamed: 0": "trial_index"})
+
+    if "trial_type" not in df.columns:
+        raise ValueError("Expected column `trial_type` in preferences CSV.")
+
+    filtered = df.loc[df["trial_type"] == "mirror-preference", :]
+
+    missing = [col for col in STEP1_COLUMNS if col not in filtered.columns]
+    if missing:
+        raise ValueError(f"Preferences CSV missing expected columns: {missing}")
+
+    return filtered.loc[:, STEP1_COLUMNS].reset_index(drop=True)
