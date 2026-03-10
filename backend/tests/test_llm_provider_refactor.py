@@ -48,14 +48,15 @@ def test_non_openai_providers_do_not_support_structured_output(provider_class: t
     )
 
 
-def test_llm_service_raises_for_unsupported_structured_output() -> None:
+def test_llm_service_falls_back_when_structured_output_unsupported() -> None:
     service = LLMService()
     provider = AnthropicProvider()
     provider.initialize(api_key="test")
 
-    with pytest.raises(ValueError, match="does not support structured outputs"):
-        service._prepare_completion_kwargs(
-            model="test-model",
-            provider=provider,
-            response_format=_TestResponseModel,
-        )
+    completion_kwargs, response_format_dict = service._prepare_completion_kwargs(
+        model="test-model",
+        provider=provider,
+        response_format=_TestResponseModel,
+    )
+    assert response_format_dict is None
+    assert "response_format" not in completion_kwargs
