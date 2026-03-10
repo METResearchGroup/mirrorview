@@ -53,6 +53,7 @@ class GenerationService:
         selected_model_id = submission.model_id
         model_config = ModelConfigRegistry.get_model_config(selected_model_id)
         litellm_route = model_config.get_litellm_route()
+        provider_name = model_config.provider_name
 
         start = time.monotonic()
         timeout_s = 30
@@ -66,8 +67,10 @@ class GenerationService:
                     ),
                     abandon_on_cancel=True,
                 )
-        except TimeoutError as e:
-            raise HTTPException(status_code=504, detail="LLM request timed out") from e
+        except TimeoutError as exc:
+            raise HTTPException(status_code=504, detail="LLM request timed out") from exc
+        except Exception:
+            raise
         latency_ms = int((time.monotonic() - start) * 1000)
 
         async with self._uow.transaction():
@@ -75,7 +78,7 @@ class GenerationService:
             await self._generations.add(
                 submission_id=submission.id,
                 flip=flip,
-                provider=model_config.provider_name,
+                provider=provider_name,
                 model_id=selected_model_id,
                 model_name=litellm_route,
                 prompt_name=None,

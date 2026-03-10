@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import asyncio
+import json
 import uuid
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from litellm import ModelResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -43,12 +45,23 @@ async def _fetch_one(
         await engine.dispose()
 
 
+def _patch_litellm(monkeypatch: pytest.MonkeyPatch) -> None:
+    import ml_tooling.llm.llm_service as llm_service_mod
+
+    def _fake_completion(**kwargs: Any) -> ModelResponse:
+        content = json.dumps({"flipped_text": "hello (flipped)", "explanation": "because"})
+        return ModelResponse(choices=[{"message": {"content": content}}])
+
+    monkeypatch.setattr(llm_service_mod.litellm, "completion", _fake_completion)
+
+
 class TestPersistenceIntegration:
     """Integration tests for DB persistence using a hermetic Postgres container."""
 
     def test_generate_and_feedback_persist_rows(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """POST endpoints persist expected rows to Postgres."""
         # Arrange
+        _patch_litellm(monkeypatch)
         try:
             with PostgresContainer("postgres:16-alpine") as pg:
                 sync_url = pg.get_connection_url()
@@ -154,6 +167,7 @@ class TestPersistenceIntegration:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """App startup applies migrations so a fresh DB can serve requests."""
+        _patch_litellm(monkeypatch)
         try:
             with PostgresContainer("postgres:16-alpine") as pg:
                 sync_url = pg.get_connection_url()

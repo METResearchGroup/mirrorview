@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import importlib
+import json
 from typing import Any
 from uuid import uuid4
 
 import pytest
+from litellm import ModelResponse
 from pydantic import BaseModel
 
 
@@ -29,7 +31,7 @@ def _payload(text: str) -> dict[str, Any]:
     }
 
 
-def _install_fake_llm(main: Any) -> None:
+def _install_fake_llm(main: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeLLM:
         def structured_completion(
             self,
@@ -44,6 +46,14 @@ def _install_fake_llm(main: Any) -> None:
 
     main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
 
+    import ml_tooling.llm.llm_service as llm_service_mod
+
+    def _fake_completion(**kwargs: Any) -> ModelResponse:
+        content = json.dumps({"flipped_text": "ok", "explanation": "ok"})
+        return ModelResponse(choices=[{"message": {"content": content}}])
+
+    monkeypatch.setattr(llm_service_mod.litellm, "completion", _fake_completion)
+
 
 def test_generate_endpoint_rate_limited(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(
@@ -51,7 +61,7 @@ def test_generate_endpoint_rate_limited(monkeypatch: pytest.MonkeyPatch) -> None
         CORS_ORIGINS="http://localhost:3000",
         RATE_LIMIT_GENERATE="1/minute",
     )
-    _install_fake_llm(main)
+    _install_fake_llm(main, monkeypatch)
 
     from fastapi.testclient import TestClient
 
@@ -73,7 +83,7 @@ def test_payload_too_large_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
         CORS_ORIGINS="http://localhost:3000",
         MAX_REQUEST_BODY_BYTES="150",
     )
-    _install_fake_llm(main)
+    _install_fake_llm(main, monkeypatch)
 
     from fastapi.testclient import TestClient
 

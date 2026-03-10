@@ -217,6 +217,13 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
     http_exc = cast(HTTPException, exc)
     request_id = get_request_id(request)
     status_code = http_exc.status_code
+    if status_code == 504:
+        return error_response(
+            status_code=504,
+            code="request_error",
+            message="LLM request timed out.",
+            request_id=request_id,
+        )
     if status_code >= 500:
         return error_response(
             status_code=status_code,
