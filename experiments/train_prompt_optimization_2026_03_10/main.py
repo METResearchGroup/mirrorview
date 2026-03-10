@@ -4,23 +4,24 @@ from pathlib import Path
 
 import pandas as pd
 
-import sys
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-CURRENT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(CURRENT_DIR))
-
-from backend.lib.constants import ROOT_DIR  # noqa: E402
-from step1_filter_preferences import filter_mirror_preference_rows  # noqa: E402
-from step2_join_mirrors import join_preferences_with_mirrors  # noqa: E402
-from step3_build_selected_mirror_dataset import build_selected_mirror_dataset  # noqa: E402
-from step4_build_pairwise_preferences import build_pairwise_preferences  # noqa: E402
+from backend.lib.constants import ROOT_DIR
+from experiments.train_prompt_optimization_2026_03_10.step1_filter_preferences import (
+    filter_mirror_preference_rows,
+)
+from experiments.train_prompt_optimization_2026_03_10.step2_join_mirrors import (
+    join_preferences_with_mirrors,
+)
+from experiments.train_prompt_optimization_2026_03_10.step3_build_selected_mirror_dataset import (
+    build_selected_mirror_dataset,
+)
+from experiments.train_prompt_optimization_2026_03_10.step4_build_pairwise_preferences import (
+    build_pairwise_preferences,
+)
 
 RAW_DATA_DIR = ROOT_DIR / "data" / "raw" / "2026_01_01_pilot_data"
 PREFERENCES_CSV = RAW_DATA_DIR / "user_preferences_pilot_data.csv"
 MIRRORED_CSV = RAW_DATA_DIR / "mirrored_posts.csv"
-ARTIFACTS_DIR = CURRENT_DIR / "artifacts"
+ARTIFACTS_DIR = Path(__file__).resolve().parent / "artifacts"
 
 
 def main(
