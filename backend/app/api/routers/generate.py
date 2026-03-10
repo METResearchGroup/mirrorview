@@ -64,6 +64,9 @@ async def generate_response(
         raise HTTPException(status_code=400, detail=str(e)) from e
     except (LLMTransientError,) as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+    except HTTPException:
+        # Preserve status codes from downstream layers (e.g. 504 timeout).
+        raise
     except Exception as e:
         logger.exception("Unhandled generate_response failure submission_id=%s", submission_id)
         raise HTTPException(status_code=500, detail="Internal server error.") from e

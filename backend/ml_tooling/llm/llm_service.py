@@ -1,5 +1,6 @@
 """Service for interacting with LLM providers via LiteLLM."""
 
+import json
 import threading
 from typing import Any, TypeVar
 
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 
 from ml_tooling.llm.config.model_registry import ModelConfigRegistry
 from ml_tooling.llm.exceptions import (
+    LLMInvalidRequestError,
     standardize_litellm_exception,
 )
 from ml_tooling.llm.providers.base import LLMProviderProtocol
@@ -104,9 +106,9 @@ class LLMService:
                 response_format, model_config_dict
             )
             if response_format_dict is None:
-                raise ValueError(
-                    f"Provider {provider.provider_name!r} does not support structured outputs for model {model!r}."
-                )
+                # Important: don't fail. We'll fall back to "JSON-in-text" prompting
+                # and still validate via Pydantic on the way out.
+                response_format_dict = None
 
         # Prepare completion kwargs using provider-specific logic
         # Note: messages is passed as placeholder empty list here, will be set by caller
@@ -119,6 +121,43 @@ class LLMService:
         )
 
         return completion_kwargs, response_format_dict
+
+    def _json_fallback_instruction(self, response_model: type[BaseModel]) -> str:
+        # Keep this short and model-agnostic; large schemas can reduce completion quality.
+        props = list((response_model.model_json_schema().get("properties") or {}).keys())
+        required = list(response_model.model_json_schema().get("required") or [])
+        return (
+            "Return ONLY valid JSON (no markdown, no prose). "
+            f"Top-level object keys: {props}. Required keys: {required}. "
+            "Do not include any other keys."
+        )
+
+    def _augment_messages_for_json_fallback(
+        self,
+        *,
+        messages: list[dict],
+        response_model: type[BaseModel],
+        provider_name: str,
+        model: str,
+    ) -> list[dict]:
+        instruction = self._json_fallback_instruction(response_model)
+        return [{"role": "system", "content": instruction}, *messages]
+
+    def _extract_json_from_text(self, text: str) -> str | None:
+        """Best-effort extraction of the first JSON value from text."""
+        decoder = json.JSONDecoder()
+        for i, ch in enumerate(text):
+            if ch not in "{[":
+                continue
+            try:
+                obj, end = decoder.raw_decode(text[i:])
+            except Exception:
+                continue
+            # Only accept objects/arrays; our response models expect objects.
+            if isinstance(obj, (dict, list)):
+                return json.dumps(obj, ensure_ascii=False)
+            # If it's a primitive, ignore and keep scanning.
+        return None
 
     def _chat_completion(
         self,
@@ -161,9 +200,31 @@ class LLMService:
         try:
             result = litellm.completion(**completion_kwargs)  # type: ignore
         except Exception as e:
-            # Standardize LiteLLM exceptions to internal exception types at the boundary
-            # This decouples retry logic from provider-specific exception types
-            raise standardize_litellm_exception(e) from e
+            standardized = standardize_litellm_exception(e)
+            # If the model/provider rejects response_format at runtime, fall back to
+            # a plain completion (no response_format) and rely on JSON prompting +
+            # Pydantic validation. This covers cases where the provider *generally*
+            # supports structured outputs, but a specific model doesn't.
+            if (
+                response_format is not None
+                and isinstance(standardized, LLMInvalidRequestError)
+                and "response_format" in str(standardized).lower()
+            ):
+                completion_kwargs.pop("response_format", None)
+                completion_kwargs["messages"] = self._augment_messages_for_json_fallback(
+                    messages=completion_kwargs["messages"],
+                    response_model=response_format,
+                    provider_name=provider.provider_name,
+                    model=model,
+                )
+                try:
+                    result = litellm.completion(**completion_kwargs)  # type: ignore
+                except Exception as e2:
+                    raise standardize_litellm_exception(e2) from e2
+            else:
+                # Standardize LiteLLM exceptions to internal exception types at the boundary
+                # This decouples retry logic from provider-specific exception types
+                raise standardized from e
 
         # Coerce to ModelResponse for type safety
         # LiteLLM can return either ModelResponse or a CustomStreamWrapper;
@@ -367,7 +428,31 @@ class LLMService:
         # Step 2: Get provider for this model
         provider = self._get_provider_for_model(model)
 
-        # Step 3: Execute with retry and validation
+        # Step 3: If provider lacks native structured outputs, add a JSON-only instruction
+        # so we can still validate the response.
+        response_format_dict = None
+        try:
+            model_config_obj = ModelConfigRegistry.get_model_config(model)
+            model_config_dict = {
+                "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
+                "litellm_route": model_config_obj.get_litellm_route(),
+            }
+        except (ValueError, FileNotFoundError):
+            model_config_dict = {"kwargs": {}}
+        try:
+            response_format_dict = provider.format_structured_output(response_model, model_config_dict)
+        except Exception:
+            response_format_dict = None
+
+        if response_format_dict is None:
+            messages = self._augment_messages_for_json_fallback(
+                messages=messages,
+                response_model=response_model,
+                provider_name=provider.provider_name,
+                model=model,
+            )
+
+        # Step 4: Execute with retry and validation
         return self._complete_and_validate_structured(
             messages=messages,
             model=model,
@@ -385,7 +470,13 @@ class LLMService:
         content: str | None = response.choices[0].message.content  # type: ignore
         if content is None:
             raise ValueError("Response content is None. Expected structured output from LLM.")
-        return response_model.model_validate_json(content)
+        try:
+            return response_model.model_validate_json(content)
+        except Exception as e:
+            extracted = self._extract_json_from_text(content)
+            if extracted is not None:
+                return response_model.model_validate_json(extracted)
+            raise e
 
     def handle_batch_completion_responses(
         self,

@@ -10,6 +10,7 @@ from app.db.repos.interfaces import GenerationRepo, SubmissionRepo
 from app.schemas import FlipResponse, GenerateResponseRequest
 from fastapi import HTTPException
 from ml_tooling.llm.config.model_registry import ModelConfigRegistry
+from ml_tooling.llm.providers.registry import LLMProviderRegistry
 
 
 class LLMClient(Protocol):
@@ -41,6 +42,21 @@ class GenerationService:
         selected_model_id = submission.model_id
         model_config = ModelConfigRegistry.get_model_config(selected_model_id)
         litellm_route = model_config.get_litellm_route()
+        provider_name = model_config.provider_name
+
+        try:
+            provider_obj = LLMProviderRegistry.get_provider(selected_model_id)
+        except Exception:
+            provider_obj = None
+
+        supports_structured = False
+        try:
+            supports_structured = (
+                provider_obj is not None
+                and provider_obj.format_structured_output(FlipResponse, {}) is not None
+            )
+        except Exception:
+            supports_structured = False
 
         start = time.monotonic()
         timeout_s = 30
@@ -56,6 +72,8 @@ class GenerationService:
                 )
         except TimeoutError as e:
             raise HTTPException(status_code=504, detail="LLM request timed out") from e
+        except Exception as e:
+            raise
         latency_ms = int((time.monotonic() - start) * 1000)
 
         async with self._uow.transaction():
