@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -18,6 +19,7 @@ except ImportError:  # pragma: no cover
 
 
 DEFAULT_MODEL = "gpt-5-nano"
+DEFAULT_LABELS_SUBDIR = "llm_labels"
 
 INPUT_COLUMNS = [
     "label_id",
@@ -48,6 +50,16 @@ def _read_csv_if_exists(path: Path) -> pd.DataFrame | None:
     return pd.read_csv(path)
 
 
+def timestamp_for_filename(dt: datetime) -> str:
+    return dt.strftime("%Y_%m_%d-%H:%M:%S")
+
+
+def list_label_csvs(labels_dir: Path) -> list[Path]:
+    if not labels_dir.exists():
+        return []
+    return sorted([p for p in labels_dir.iterdir() if p.is_file() and p.suffix == ".csv"])
+
+
 def load_success_ids(path: Path) -> set[str]:
     df = _read_csv_if_exists(path)
     if df is None or df.empty:
@@ -64,6 +76,13 @@ def load_labeled_ids_from_labels_csv(path: Path) -> set[str]:
     if "label_id" not in df.columns:
         raise ValueError(f"Expected column `label_id` in {path}")
     return set(df["label_id"].dropna().astype(str).tolist())
+
+
+def load_labeled_ids_from_labels_dir(labels_dir: Path) -> set[str]:
+    labeled: set[str] = set()
+    for p in list_label_csvs(labels_dir):
+        labeled |= load_labeled_ids_from_labels_csv(p)
+    return labeled
 
 
 def _append_dataframe(path: Path, df: pd.DataFrame) -> None:
@@ -97,9 +116,9 @@ def append_success_ids(path: Path, label_ids: list[str]) -> int:
     return len(new_ids)
 
 
-def sync_success_ids_from_labels(*, labels_csv: Path, success_csv: Path) -> int:
-    """Append any label_ids present in labels CSV but missing in success CSV."""
-    labeled = load_labeled_ids_from_labels_csv(labels_csv)
+def sync_success_ids_from_labels_dir(*, labels_dir: Path, success_csv: Path) -> int:
+    """Append any label_ids present in labels dir but missing in success CSV."""
+    labeled = load_labeled_ids_from_labels_dir(labels_dir)
     if not labeled:
         return 0
     existing = load_success_ids(success_csv)
@@ -129,27 +148,33 @@ class LabelingRunStats:
 def label_with_llm(
     *,
     input_csv: Path | str,
-    labels_csv: Path | str,
+    labels_dir: Path | str,
     success_csv: Path | str,
     model: str = DEFAULT_MODEL,
     batch_size: int = 10,
     max_batches: int | None = None,
     resume: bool = True,
     llm_service: LLMService | None = None,
+    output_csv: Path | str | None = None,
+    run_timestamp: datetime | None = None,
 ) -> LabelingRunStats:
     input_path = Path(input_csv)
-    labels_path = Path(labels_csv)
+    labels_dir_path = Path(labels_dir)
     success_path = Path(success_csv)
 
     df = pd.read_csv(input_path)
     _validate_input(df)
 
     if resume:
-        synced = sync_success_ids_from_labels(labels_csv=labels_path, success_csv=success_path)
+        synced = sync_success_ids_from_labels_dir(
+            labels_dir=labels_dir_path, success_csv=success_path
+        )
         if synced:
-            print(f"Synced {synced} label_id values into {success_path} from {labels_path}")
+            print(f"Synced {synced} label_id values into {success_path} from {labels_dir_path}")
 
-    completed_ids = load_success_ids(success_path) | load_labeled_ids_from_labels_csv(labels_path)
+    completed_ids = load_success_ids(success_path) | load_labeled_ids_from_labels_dir(
+        labels_dir_path
+    )
     pending = df.loc[~df["label_id"].astype(str).isin(completed_ids), :].reset_index(drop=True)
 
     if pending.empty:
@@ -160,6 +185,14 @@ def label_with_llm(
         raise ValueError("batch_size must be > 0")
 
     service = llm_service or get_llm_service()
+
+    labels_dir_path.mkdir(parents=True, exist_ok=True)
+    if output_csv is None:
+        dt = run_timestamp or datetime.now()
+        output_path = labels_dir_path / f"{timestamp_for_filename(dt)}.csv"
+    else:
+        output_path = Path(output_csv)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
     processed = 0
     succeeded = 0
@@ -218,7 +251,7 @@ def label_with_llm(
         labels_out = pd.DataFrame(label_rows).loc[:, LABEL_COLUMNS]
 
         # Write labels durably first.
-        _append_dataframe(labels_path, labels_out)
+        _append_dataframe(output_path, labels_out)
         newly_appended = append_success_ids(success_path, label_ids)
 
         processed += len(batch_df)
@@ -238,7 +271,7 @@ if __name__ == "__main__":
     artifacts_dir = Path(__file__).resolve().parent / "artifacts"
     label_with_llm(
         input_csv=artifacts_dir / "step1_unique_mirrors_to_label.csv",
-        labels_csv=artifacts_dir / "step2_llm_labels.csv",
+        labels_dir=artifacts_dir / DEFAULT_LABELS_SUBDIR,
         success_csv=artifacts_dir / "successfully_labeled_flips.csv",
         batch_size=10,
         max_batches=1,

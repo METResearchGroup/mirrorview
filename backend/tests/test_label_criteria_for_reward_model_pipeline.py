@@ -52,7 +52,7 @@ def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:
     )
 
     input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
-    labels_csv = tmp_path / "step2_llm_labels.csv"
+    labels_dir = tmp_path / "llm_labels"
     success_csv = tmp_path / "successfully_labeled_flips.csv"
 
     df = pd.DataFrame(
@@ -116,7 +116,7 @@ def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:
 
     stats = label_with_llm(
         input_csv=input_csv,
-        labels_csv=labels_csv,
+        labels_dir=labels_dir,
         success_csv=success_csv,
         model="gpt-5-nano",
         batch_size=10,
@@ -127,7 +127,9 @@ def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:
     assert stats.processed == 2
     assert stats.succeeded == 2
 
-    labeled = pd.read_csv(labels_csv)
+    label_files = sorted(labels_dir.glob("*.csv"))
+    assert len(label_files) == 1
+    labeled = pd.read_csv(label_files[0])
     assert set(labeled["label_id"].tolist()) == {"p1::llama", "p1::qwen"}
 
     success = pd.read_csv(success_csv)
@@ -137,7 +139,7 @@ def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:
     # Rerun: should skip everything and not append duplicates.
     stats2 = label_with_llm(
         input_csv=input_csv,
-        labels_csv=labels_csv,
+        labels_dir=labels_dir,
         success_csv=success_csv,
         model="gpt-5-nano",
         batch_size=10,
@@ -165,7 +167,7 @@ def test_step3_criteria_sum_and_passes_stage1_filter(tmp_path: Path) -> None:
     )
 
     input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
-    labels_csv = tmp_path / "step2_llm_labels.csv"
+    labels_dir = tmp_path / "llm_labels"
     output_csv = tmp_path / "step3_all_mirror_criteria_labels.csv"
 
     inputs = pd.DataFrame(
@@ -200,11 +202,12 @@ def test_step3_criteria_sum_and_passes_stage1_filter(tmp_path: Path) -> None:
             },
         ]
     )
-    labels.to_csv(labels_csv, index=False)
+    labels_dir.mkdir(parents=True, exist_ok=True)
+    labels.to_csv(labels_dir / "2026_03_10-00:00:00.csv", index=False)
 
     out = finalize_labels(
         input_csv=input_csv,
-        labels_csv=labels_csv,
+        labels_dir=labels_dir,
         output_csv=output_csv,
         require_all_labeled=True,
     )

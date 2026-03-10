@@ -82,7 +82,7 @@ def main(argv: list[str] | None = None) -> None:
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
     step1_out = ARTIFACTS_DIR / "step1_unique_mirrors_to_label.csv"
-    step2_labels = ARTIFACTS_DIR / "step2_llm_labels.csv"
+    step2_labels_dir = ARTIFACTS_DIR / "llm_labels"
     step2_success = ARTIFACTS_DIR / "successfully_labeled_flips.csv"
     step3_out = ARTIFACTS_DIR / "step3_all_mirror_criteria_labels.csv"
 
@@ -97,7 +97,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.step in ("all", "label"):
         label_with_llm(
             input_csv=step1_out,
-            labels_csv=step2_labels,
+            labels_dir=step2_labels_dir,
             success_csv=step2_success,
             model=args.model,
             batch_size=args.batch_size,
@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.step in ("all", "finalize"):
         finalize_labels(
             input_csv=step1_out,
-            labels_csv=step2_labels,
+            labels_dir=step2_labels_dir,
             output_csv=step3_out,
             require_all_labeled=True,
         )
