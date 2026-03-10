@@ -87,10 +87,10 @@ class LLMProviderProtocol(ABC):
     def prepare_completion_kwargs(
         self,
         model: str,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         response_format: dict[str, Any] | None,
         model_config: dict[str, Any],
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Prepare kwargs for litellm.completion call.
 
@@ -107,4 +107,3 @@ class LLMProviderProtocol(ABC):
             Complete kwargs dict ready for litellm.completion
         """
         ...
-

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 import anyio
+from anyio.to_thread import run_sync
+from pydantic import BaseModel
 
 from app.db.uow import UnitOfWork
 from app.db.repos.interfaces import GenerationRepo, SubmissionRepo
@@ -12,9 +14,19 @@ from fastapi import HTTPException
 from ml_tooling.llm.config.model_registry import ModelConfigRegistry
 
 
+T = TypeVar("T", bound=BaseModel)
+
+
 class LLMClient(Protocol):
-    def structured_completion(self, messages: list[dict[str, Any]], response_model: Any, model: str | None = None):
+    def structured_completion(
+        self,
+        messages: list[dict[str, Any]],
+        response_model: type[T],
+        model: str | None = None,
+        **kwargs: Any,
+    ) -> T:
         """Synchronous LLM call returning an instance of response_model."""
+        ...
 
 
 class GenerationService:
@@ -46,7 +58,7 @@ class GenerationService:
         timeout_s = 30
         try:
             with anyio.fail_after(timeout_s):
-                flip: FlipResponse = await anyio.to_thread.run_sync(
+                flip: FlipResponse = await run_sync(
                     lambda: self._llm.structured_completion(
                         messages=messages,
                         response_model=FlipResponse,
@@ -73,4 +85,3 @@ class GenerationService:
             )
 
         return flip
-

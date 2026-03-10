@@ -1,8 +1,14 @@
+from __future__ import annotations
+
 import importlib
+from typing import Any
 from uuid import uuid4
 
+import pytest
+from pydantic import BaseModel
 
-def _reload_app(monkeypatch, **env: str):
+
+def _reload_app(monkeypatch: pytest.MonkeyPatch, **env: str) -> Any:
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
@@ -12,7 +18,7 @@ def _reload_app(monkeypatch, **env: str):
     return main
 
 
-def _payload(text: str) -> dict:
+def _payload(text: str) -> dict[str, Any]:
     return {
         "text": text,
         "submission": {
@@ -23,9 +29,15 @@ def _payload(text: str) -> dict:
     }
 
 
-def _install_fake_llm(main):
+def _install_fake_llm(main: Any) -> None:
     class _FakeLLM:
-        def structured_completion(self, messages, response_model, model=None):
+        def structured_completion(
+            self,
+            messages: list[dict[str, Any]],
+            response_model: type[BaseModel],
+            model: str | None = None,  # noqa: ARG002
+            **kwargs: Any,  # noqa: ARG002
+        ) -> BaseModel:
             return response_model(flipped_text="ok", explanation="ok")
 
     import app.di.providers as providers
@@ -33,7 +45,7 @@ def _install_fake_llm(main):
     main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
 
 
-def test_generate_endpoint_rate_limited(monkeypatch):
+def test_generate_endpoint_rate_limited(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(
         monkeypatch,
         CORS_ORIGINS="http://localhost:3000",
@@ -55,7 +67,7 @@ def test_generate_endpoint_rate_limited(monkeypatch):
     main.app.dependency_overrides.clear()
 
 
-def test_payload_too_large_rejected(monkeypatch):
+def test_payload_too_large_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(
         monkeypatch,
         CORS_ORIGINS="http://localhost:3000",
@@ -73,7 +85,7 @@ def test_payload_too_large_rejected(monkeypatch):
     main.app.dependency_overrides.clear()
 
 
-def test_security_headers_and_request_id_added(monkeypatch):
+def test_security_headers_and_request_id_added(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(monkeypatch, CORS_ORIGINS="http://localhost:3000")
 
     from fastapi.testclient import TestClient
@@ -89,7 +101,7 @@ def test_security_headers_and_request_id_added(monkeypatch):
     assert res.headers.get("Content-Security-Policy-Report-Only")
 
 
-def test_validation_errors_are_standardized(monkeypatch):
+def test_validation_errors_are_standardized(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(monkeypatch, CORS_ORIGINS="http://localhost:3000")
 
     from fastapi.testclient import TestClient
@@ -112,7 +124,7 @@ def test_validation_errors_are_standardized(monkeypatch):
     assert res.json()["error"]["code"] == "validation_error"
 
 
-def test_generate_input_length_is_bounded(monkeypatch):
+def test_generate_input_length_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(monkeypatch, CORS_ORIGINS="http://localhost:3000")
 
     from fastapi.testclient import TestClient
@@ -123,5 +135,3 @@ def test_generate_input_length_is_bounded(monkeypatch):
 
     assert res.status_code == 422
     assert res.json()["error"]["code"] == "validation_error"
-
-

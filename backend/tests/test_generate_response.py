@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 import importlib
 import logging
+from typing import Any
 from uuid import uuid4
 
+import pytest
+from pydantic import BaseModel
 
-def _reload_app_with_env(monkeypatch, cors_origins: str | None = None):
+
+def _reload_app_with_env(monkeypatch: pytest.MonkeyPatch, cors_origins: str | None = None) -> Any:
     if cors_origins is None:
         monkeypatch.delenv("CORS_ORIGINS", raising=False)
     else:
@@ -16,11 +22,17 @@ def _reload_app_with_env(monkeypatch, cors_origins: str | None = None):
     return main
 
 
-def test_generate_response_returns_flipped_text(monkeypatch):
+def test_generate_response_returns_flipped_text(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     class _FakeLLM:
-        def structured_completion(self, messages, response_model, model=None):
+        def structured_completion(
+            self,
+            messages: list[dict[str, Any]],
+            response_model: type[BaseModel],
+            model: str | None = None,  # noqa: ARG002
+            **kwargs: Any,  # noqa: ARG002
+        ) -> BaseModel:
             return response_model(flipped_text="hello (flipped)", explanation="because")
 
     import app.di.providers as providers
@@ -47,11 +59,19 @@ def test_generate_response_returns_flipped_text(monkeypatch):
     main.app.dependency_overrides.clear()
 
 
-def test_generate_response_accepts_submission_context_and_logs_id(monkeypatch, caplog):
+def test_generate_response_accepts_submission_context_and_logs_id(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     class _FakeLLM:
-        def structured_completion(self, messages, response_model, model=None):
+        def structured_completion(
+            self,
+            messages: list[dict[str, Any]],
+            response_model: type[BaseModel],
+            model: str | None = None,  # noqa: ARG002
+            **kwargs: Any,  # noqa: ARG002
+        ) -> BaseModel:
             return response_model(flipped_text="hello (flipped)", explanation="because")
 
     import app.di.providers as providers
@@ -81,7 +101,7 @@ def test_generate_response_accepts_submission_context_and_logs_id(monkeypatch, c
     main.app.dependency_overrides.clear()
 
 
-def test_cors_allows_configured_origin(monkeypatch):
+def test_cors_allows_configured_origin(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="https://example.com")
 
     from fastapi.testclient import TestClient
@@ -98,7 +118,7 @@ def test_cors_allows_configured_origin(monkeypatch):
     assert res.headers.get("access-control-allow-origin") == "https://example.com"
 
 
-def test_models_endpoint_returns_default_and_options(monkeypatch):
+def test_models_endpoint_returns_default_and_options(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     from fastapi.testclient import TestClient
@@ -114,7 +134,7 @@ def test_models_endpoint_returns_default_and_options(monkeypatch):
     assert "gpt-4" not in model_ids
 
 
-def test_generate_response_rejects_unknown_model_id(monkeypatch):
+def test_generate_response_rejects_unknown_model_id(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     from fastapi.testclient import TestClient
@@ -138,7 +158,7 @@ def test_generate_response_rejects_unknown_model_id(monkeypatch):
     assert "does-not-exist" in res.json()["error"]["message"]
 
 
-def test_generate_response_rejects_unavailable_model_id(monkeypatch):
+def test_generate_response_rejects_unavailable_model_id(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     from fastapi.testclient import TestClient
@@ -159,4 +179,3 @@ def test_generate_response_rejects_unavailable_model_id(monkeypatch):
     )
     assert res.status_code == 400
     assert "Model is not available" in res.json()["error"]["message"]
-

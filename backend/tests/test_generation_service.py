@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import uuid
-from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from typing import Any
 
 import pytest
+from pytest_mock import MockerFixture
 
 from app.schemas import FlipResponse, GenerateResponseRequest, SubmissionContext
+from app.db.uow import UnitOfWork
 from app.services.generation_service import GenerationService
 
 
@@ -11,31 +16,30 @@ class TestGenerationServiceGenerate:
     """Tests for GenerationService.generate method."""
 
     @pytest.mark.asyncio
-    async def test_persists_and_returns_flip(self, mocker):
+    async def test_persists_and_returns_flip(self, mocker: MockerFixture) -> None:
         """Service persists submission+generation and returns FlipResponse."""
         # Arrange
         submission = SubmissionContext(
             id=uuid.uuid4(),
-            created_at="2026-02-03T00:00:00.000Z",
+            created_at=datetime(2026, 2, 3, tzinfo=timezone.utc),
             input_text="hello",
             model_id="gpt-5-nano",
         )
         req = GenerateResponseRequest(text="hello", submission=submission)
-        messages = [{"role": "user", "content": "hello"}]
+        messages: list[dict[str, Any]] = [{"role": "user", "content": "hello"}]
 
         expected = FlipResponse(flipped_text="hello (flipped)", explanation="because")
 
-        fake_llm = mocker.Mock()
+        fake_llm: Any = mocker.Mock()
         fake_llm.structured_completion.return_value = expected
 
-        submissions_repo = mocker.AsyncMock()
-        generations_repo = mocker.AsyncMock()
+        submissions_repo: Any = mocker.AsyncMock()
+        generations_repo: Any = mocker.AsyncMock()
 
         entered_tx = {"value": False}
 
-        class _UoW:
-            @asynccontextmanager
-            async def transaction(self):
+        class _UoW(UnitOfWork):
+            async def _transaction(self):
                 entered_tx["value"] = True
                 yield
 
@@ -64,4 +68,3 @@ class TestGenerationServiceGenerate:
         assert kwargs["provider"] == "openai"
         assert kwargs["model_id"] == "gpt-5-nano"
         assert kwargs["model_name"] == "gpt-5-nano"
-

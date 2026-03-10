@@ -22,7 +22,9 @@ from lib.load_env_vars import settings
         ("t", True),
     ],
 )
-def test_is_persistence_enabled_parses_truthy_values(monkeypatch: pytest.MonkeyPatch, raw, expected):
+def test_is_persistence_enabled_parses_truthy_values(
+    monkeypatch: pytest.MonkeyPatch, raw: str | None, expected: bool
+) -> None:
     monkeypatch.setenv("RUN_MODE", "test")
 
     if raw is None:
@@ -32,4 +34,3 @@ def test_is_persistence_enabled_parses_truthy_values(monkeypatch: pytest.MonkeyP
 
     settings.cache_clear()
     assert is_persistence_enabled() is expected
-

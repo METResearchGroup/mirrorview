@@ -5,6 +5,7 @@ edited_text at edited_at. Optionally linked to a specific generation_id (SET NUL
 if that generation is deleted). Stored to analyze how often and how users correct
 the model output, which supports prompt/model improvement and quality metrics.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -47,4 +48,3 @@ class EditFeedbackEvent(Base):
         nullable=False,
         server_default=func.now(),
     )
-

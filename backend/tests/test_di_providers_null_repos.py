@@ -44,7 +44,9 @@ def test_null_repos_returned_when_persistence_disabled(
     assert isinstance(repo, expected_type)
 
 
-def test_null_unit_of_work_returned_when_persistence_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_null_unit_of_work_returned_when_persistence_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _disable_persistence(monkeypatch)
 
     from app.di import providers

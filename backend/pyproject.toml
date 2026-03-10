@@ -21,6 +21,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "ruff",
+  "pyright",
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
@@ -29,7 +30,19 @@ dev = [
   "testcontainers",
 ]
 
+[project.optional-dependencies]
+test = [
+  "ruff",
+  "pyright",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "httpx",
+  "testcontainers",
+  "complexipy",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-

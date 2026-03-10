@@ -54,7 +54,7 @@ def test_llm_service_raises_for_unsupported_structured_output() -> None:
     provider.initialize(api_key="test")
 
     with pytest.raises(ValueError, match="does not support structured outputs"):
-        service._prepare_completion_kwargs(
+        service._prepare_completion_kwargs(  # pyright: ignore[reportPrivateUsage]
             model="test-model",
             provider=provider,
             response_format=_TestResponseModel,

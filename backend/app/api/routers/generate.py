@@ -40,7 +40,7 @@ async def generate_response(
 ) -> FlipResponse:
     submission_id = str(req.submission.id)
     model_id = req.submission.model_id
-    text_len = len(req.text) if isinstance(req.text, str) else None
+    text_len = len(req.text)
     logger.info(
         "generate_response request submission_id=%s model_id=%s text_len=%s",
         submission_id,
@@ -67,4 +67,3 @@ async def generate_response(
     except Exception as e:
         logger.exception("Unhandled generate_response failure submission_id=%s", submission_id)
         raise HTTPException(status_code=500, detail="Internal server error.") from e
-

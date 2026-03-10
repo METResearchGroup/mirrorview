@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
-from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
+from app.db.repos.interfaces import (
+    EditFeedbackRepo,
+    GenerationRepo,
+    SubmissionRepo,
+    ThumbFeedbackRepo,
+)
 from app.schemas import FlipResponse, SubmissionContext
 
 NULL_UUID = uuid.UUID(int=0)
@@ -28,7 +34,7 @@ class NullGenerationRepo(GenerationRepo):
         prompt_name: str | None = None,  # noqa: ARG002
         prompt_version: str | None = None,  # noqa: ARG002
         latency_ms: int | None = None,  # noqa: ARG002
-        usage: dict | None = None,  # noqa: ARG002
+        usage: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> uuid.UUID:
         return NULL_UUID
 
@@ -55,4 +61,3 @@ class NullEditFeedbackRepo(EditFeedbackRepo):
         generation_id: uuid.UUID | None = None,
     ) -> None:
         return
-

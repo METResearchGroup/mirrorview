@@ -5,7 +5,12 @@ from collections.abc import AsyncIterator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
+from app.db.repos.interfaces import (
+    EditFeedbackRepo,
+    GenerationRepo,
+    SubmissionRepo,
+    ThumbFeedbackRepo,
+)
 from app.db.repos.null import (
     NullEditFeedbackRepo,
     NullGenerationRepo,
@@ -47,25 +52,33 @@ def get_unit_of_work(session: AsyncSession | None = Depends(get_maybe_session)) 
     return SqlAlchemyUnitOfWork(session)
 
 
-def get_submission_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> SubmissionRepo:
+def get_submission_repo(
+    session: AsyncSession | None = Depends(get_maybe_session),
+) -> SubmissionRepo:
     if session is None:
         return NullSubmissionRepo()
     return SqlAlchemySubmissionRepo(session)
 
 
-def get_generation_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> GenerationRepo:
+def get_generation_repo(
+    session: AsyncSession | None = Depends(get_maybe_session),
+) -> GenerationRepo:
     if session is None:
         return NullGenerationRepo()
     return SqlAlchemyGenerationRepo(session)
 
 
-def get_thumb_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> ThumbFeedbackRepo:
+def get_thumb_feedback_repo(
+    session: AsyncSession | None = Depends(get_maybe_session),
+) -> ThumbFeedbackRepo:
     if session is None:
         return NullThumbFeedbackRepo()
     return SqlAlchemyThumbFeedbackRepo(session)
 
 
-def get_edit_feedback_repo(session: AsyncSession | None = Depends(get_maybe_session)) -> EditFeedbackRepo:
+def get_edit_feedback_repo(
+    session: AsyncSession | None = Depends(get_maybe_session),
+) -> EditFeedbackRepo:
     if session is None:
         return NullEditFeedbackRepo()
     return SqlAlchemyEditFeedbackRepo(session)
@@ -74,17 +87,16 @@ def get_edit_feedback_repo(session: AsyncSession | None = Depends(get_maybe_sess
 def get_generation_service(
     uow: UnitOfWork = Depends(get_unit_of_work),
     llm: LLMClient = Depends(get_llm_client),
-    submissions=Depends(get_submission_repo),
-    generations=Depends(get_generation_repo),
+    submissions: SubmissionRepo = Depends(get_submission_repo),
+    generations: GenerationRepo = Depends(get_generation_repo),
 ) -> GenerationService:
     return GenerationService(uow=uow, llm=llm, submissions=submissions, generations=generations)
 
 
 def get_feedback_service(
     uow: UnitOfWork = Depends(get_unit_of_work),
-    submissions=Depends(get_submission_repo),
-    thumbs=Depends(get_thumb_feedback_repo),
-    edits=Depends(get_edit_feedback_repo),
+    submissions: SubmissionRepo = Depends(get_submission_repo),
+    thumbs: ThumbFeedbackRepo = Depends(get_thumb_feedback_repo),
+    edits: EditFeedbackRepo = Depends(get_edit_feedback_repo),
 ) -> FeedbackService:
     return FeedbackService(uow=uow, submissions=submissions, thumbs=thumbs, edits=edits)
-

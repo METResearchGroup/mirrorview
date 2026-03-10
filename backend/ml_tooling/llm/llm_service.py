@@ -1,5 +1,13 @@
 """Service for interacting with LLM providers via LiteLLM."""
 
+# This module integrates with third-party libraries that do not provide complete typing
+# information to Pyright. We keep the project in strict mode, but locally suppress the
+# "unknown" diagnostic family for this file to avoid false positives.
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownArgumentType=false
+# pyright: reportUnknownParameterType=false
+
 import threading
 from typing import Any, TypeVar
 
@@ -67,8 +75,8 @@ class LLMService:
         model: str,
         provider: LLMProviderProtocol,
         response_format: type[BaseModel] | None = None,
-        **kwargs,
-    ) -> tuple[dict, dict[str, Any] | None]:
+        **kwargs: Any,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         """Extract shared logic for preparing completion kwargs.
 
         Used by both single and batch completion methods to avoid duplication.
@@ -89,7 +97,7 @@ class LLMService:
         try:
             model_config_obj = ModelConfigRegistry.get_model_config(model)
             # Convert ModelConfig to dict format expected by providers
-            model_config_dict = {
+            model_config_dict: dict[str, Any] = {
                 "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
                 "litellm_route": model_config_obj.get_litellm_route(),
             }
@@ -98,7 +106,7 @@ class LLMService:
             model_config_dict = {"kwargs": {}}
 
         # Format structured output if needed (delegates to provider)
-        response_format_dict = None
+        response_format_dict: dict[str, Any] | None = None
         if response_format is not None:
             response_format_dict = provider.format_structured_output(
                 response_format, model_config_dict
@@ -110,7 +118,7 @@ class LLMService:
 
         # Prepare completion kwargs using provider-specific logic
         # Note: messages is passed as placeholder empty list here, will be set by caller
-        completion_kwargs = provider.prepare_completion_kwargs(
+        completion_kwargs: dict[str, Any] = provider.prepare_completion_kwargs(
             model=model,
             messages=[],  # Placeholder, will be set by caller
             response_format=response_format_dict,
@@ -122,11 +130,11 @@ class LLMService:
 
     def _chat_completion(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         model: str,
         provider: LLMProviderProtocol,
         response_format: type[BaseModel] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ModelResponse:
         """
         Create a chat completion request using the specified provider.
@@ -169,18 +177,16 @@ class LLMService:
         # LiteLLM can return either ModelResponse or a CustomStreamWrapper;
         # our use case isn't stream-based. This is to satisfy pyright.
         return (
-            result
-            if isinstance(result, ModelResponse)
-            else ModelResponse(**result.__dict__)  # type: ignore
+            result if isinstance(result, ModelResponse) else ModelResponse(**result.__dict__)  # type: ignore
         )
 
     def _batch_completion(
         self,
-        messages_list: list[list[dict]],
+        messages_list: list[list[dict[str, Any]]],
         model: str,
         provider: LLMProviderProtocol,
         response_format: type[BaseModel] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[ModelResponse]:
         """
         Create batch completion requests using the specified provider.
@@ -230,9 +236,7 @@ class LLMService:
         coerced_results = []
         for result in results:
             coerced_result = (
-                result
-                if isinstance(result, ModelResponse)
-                else ModelResponse(**result.__dict__)  # type: ignore
+                result if isinstance(result, ModelResponse) else ModelResponse(**result.__dict__)  # type: ignore
             )
             coerced_results.append(coerced_result)
 
@@ -241,11 +245,11 @@ class LLMService:
     @retry_llm_completion(max_retries=3, initial_delay=1.0, max_delay=60.0)
     def _complete_and_validate_structured(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         model: str,
         provider: LLMProviderProtocol,
         response_format: type[T],
-        **kwargs,
+        **kwargs: Any,
     ) -> T:
         """Execute chat completion and validate/parse the response.
 
@@ -287,11 +291,11 @@ class LLMService:
     @retry_llm_completion(max_retries=3, initial_delay=1.0, max_delay=60.0)
     def _complete_and_validate_structured_batch(
         self,
-        messages_list: list[list[dict]],
+        messages_list: list[list[dict[str, Any]]],
         model: str,
         provider: LLMProviderProtocol,
         response_format: type[T],
-        **kwargs,
+        **kwargs: Any,
     ) -> list[T]:
         """Execute batch completion and validate/parse all responses.
 
@@ -332,10 +336,10 @@ class LLMService:
 
     def structured_completion(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         response_model: type[T],
         model: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> T:
         """
         Create a chat completion request and return the result as a Pydantic model.
@@ -411,9 +415,7 @@ class LLMService:
         for response in responses:
             content: str | None = response.choices[0].message.content  # type: ignore
             if content is None:
-                raise ValueError(
-                    "Response content is None. Expected structured output from LLM."
-                )
+                raise ValueError("Response content is None. Expected structured output from LLM.")
             contents.append(content)
 
         return [response_model.model_validate_json(content) for content in contents]
@@ -424,7 +426,7 @@ class LLMService:
         response_model: type[T],
         model: str | None = None,
         role: str = "user",
-        **kwargs,
+        **kwargs: Any,
     ) -> list[T]:
         """
         Create batch completion requests and return Pydantic models.
@@ -484,4 +486,3 @@ def get_llm_service() -> LLMService:
             if _llm_service_instance is None:
                 _llm_service_instance = LLMService()
     return _llm_service_instance
-

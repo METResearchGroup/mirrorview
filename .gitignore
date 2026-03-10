@@ -5,3 +5,9 @@
 *.gitmodules
 *ai_tools*
 .DS_Store
+.venv/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.complexipy_cache/

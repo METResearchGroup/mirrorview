@@ -29,4 +29,3 @@ class SqlAlchemyEditFeedbackRepo(EditFeedbackRepo):
         )
         self._session.add(row)
         await self._session.flush()
-

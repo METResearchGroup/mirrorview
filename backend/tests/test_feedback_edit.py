@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import importlib
 import logging
 from datetime import datetime, timezone
+from typing import Any
 from uuid import uuid4
 
+import pytest
 
-def _reload_app_with_env(monkeypatch, cors_origins: str | None = None):
+
+def _reload_app_with_env(monkeypatch: pytest.MonkeyPatch, cors_origins: str | None = None) -> Any:
     if cors_origins is None:
         monkeypatch.delenv("CORS_ORIGINS", raising=False)
     else:
@@ -17,7 +22,9 @@ def _reload_app_with_env(monkeypatch, cors_origins: str | None = None):
     return main
 
 
-def test_feedback_edit_ok(monkeypatch, caplog):
+def test_feedback_edit_ok(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     submission_id = str(uuid4())
@@ -43,7 +50,7 @@ def test_feedback_edit_ok(monkeypatch, caplog):
     assert "edit_feedback" in caplog.text
 
 
-def test_feedback_edit_empty_text_422(monkeypatch):
+def test_feedback_edit_empty_text_422(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     payload = {
@@ -64,7 +71,7 @@ def test_feedback_edit_empty_text_422(monkeypatch):
     assert res.status_code == 422
 
 
-def test_feedback_edit_missing_submission_422(monkeypatch):
+def test_feedback_edit_missing_submission_422(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
     payload = {
@@ -78,4 +85,3 @@ def test_feedback_edit_missing_submission_422(monkeypatch):
     res = client.post("/feedback/edit", json=payload)
 
     assert res.status_code == 422
-

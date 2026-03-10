@@ -144,7 +144,4 @@ def standardize_litellm_exception(exception: Exception) -> LLMException:
     else:
         # Unknown LiteLLM exception - treat as transient to allow retry
         # This is safer than failing hard on unknown errors
-        return LLMTransientError(
-            f"Unknown LiteLLM error: {message}", original_exception=exception
-        )
-
+        return LLMTransientError(f"Unknown LiteLLM error: {message}", original_exception=exception)

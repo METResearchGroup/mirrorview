@@ -5,7 +5,7 @@ import os
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -53,11 +53,7 @@ class InMemoryRateLimitStore:
         if len(self._counts) < 10_000:
             return
         now_i = int(now)
-        stale = [
-            bucket
-            for bucket in self._counts
-            if bucket[3] + bucket[2] <= now_i
-        ]
+        stale = [bucket for bucket in self._counts if bucket[3] + bucket[2] <= now_i]
         for bucket in stale:
             self._counts.pop(bucket, None)
 
@@ -85,15 +81,11 @@ class EndpointRateLimiter:
 
 def build_rate_limit_policy() -> dict[str, tuple[RateLimitRule, ...]]:
     return {
-        "generate_response": _parse_rules(
-            os.getenv("RATE_LIMIT_GENERATE", "5/minute,30/hour")
-        ),
+        "generate_response": _parse_rules(os.getenv("RATE_LIMIT_GENERATE", "5/minute,30/hour")),
         "feedback_thumb": _parse_rules(
             os.getenv("RATE_LIMIT_FEEDBACK_THUMB", "30/minute,300/hour")
         ),
-        "feedback_edit": _parse_rules(
-            os.getenv("RATE_LIMIT_FEEDBACK_EDIT", "15/minute,120/hour")
-        ),
+        "feedback_edit": _parse_rules(os.getenv("RATE_LIMIT_FEEDBACK_EDIT", "15/minute,120/hour")),
         "examples_suggestions": _parse_rules(
             os.getenv("RATE_LIMIT_EXAMPLES_SUGGESTIONS", "60/minute,1000/hour")
         ),
@@ -221,9 +213,10 @@ def error_response(
     )
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    http_exc = cast(HTTPException, exc)
     request_id = get_request_id(request)
-    status_code = exc.status_code
+    status_code = http_exc.status_code
     if status_code >= 500:
         return error_response(
             status_code=status_code,
@@ -232,7 +225,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             request_id=request_id,
         )
 
-    detail = exc.detail if isinstance(exc.detail, str) and exc.detail.strip() else "Request failed."
+    detail = http_exc.detail.strip() if http_exc.detail.strip() else "Request failed."
     return error_response(
         status_code=status_code,
         code="request_error",
@@ -241,18 +234,21 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    validation_exc = cast(RequestValidationError, exc)
     return error_response(
         status_code=422,
         code="validation_error",
         message="Invalid request payload.",
         request_id=get_request_id(request),
-        details=exc.errors(),
+        details=validation_exc.errors(),
     )
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger.exception("Unhandled exception request_id=%s path=%s", get_request_id(request), request.url.path)
+    logger.exception(
+        "Unhandled exception request_id=%s path=%s", get_request_id(request), request.url.path
+    )
     return error_response(
         status_code=500,
         code="internal_error",
