@@ -3,9 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 STEP1_COLUMNS = [
-    "trial_index",
     "participant_id",
-    "prolific_id",
     "post_id",
     "post_number",
     "original_text",
@@ -23,9 +21,6 @@ def filter_mirror_preference_rows(
     """Filter to mirror-preference trials and return a stable column subset."""
 
     df = preferences.copy()
-    if "trial_index" not in df.columns and "Unnamed: 0" in df.columns:
-        df = df.rename(columns={"Unnamed: 0": "trial_index"})
-
     if "trial_type" not in df.columns:
         raise ValueError("Expected column `trial_type` in preferences CSV.")
 

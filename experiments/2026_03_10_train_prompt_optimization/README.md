@@ -5,7 +5,8 @@ This directory hosts a small, stepwise pipeline that processes the pilot mirror 
 Files
 
 - `step1_filter_preferences.py`  
-  Filters `data/raw/2026_01_01_pilot_data/user_preferences_pilot_data.csv` down to rows where `trial_type == "mirror-preference"` and retains only the columns needed downstream (participant/trial metadata, `post_id`, the original text, and the mirror that was selected).  
+  Filters `data/raw/2026_01_01_pilot_data/user_preferences_pilot_data.csv` down to rows where `trial_type == "mirror-preference"` and retains only the columns needed downstream (participant metadata, `post_id`, the original text, and the mirror that was selected).  
+  `trial_index` and `prolific_id` are dropped because they are not used downstream, even though the preview tables that follow still list them for reference.
   **Preview (`df.head()`):**
   ```markdown
   |   trial_index |   participant_id | prolific_id              | post_id                  |   post_number | original_text                                                                                                                                                                                                                                                                                  | selected_mirror   |   selected_position | presentation_order                        |   response_time_ms |   selection_time_ms |
@@ -68,8 +69,9 @@ This directory hosts a small, stepwise pipeline that processes the pilot mirror 
 Files
 
 - `step1_filter_preferences.py`  
-  Filters `data/raw/2026_01_01_pilot_data/user_preferences_pilot_data.csv` down to rows where `trial_type == "mirror-preference"` and retains only the columns needed downstream (participant/trial metadata, `post_id`, the original text, and the mirror that was selected).  
-  **Preview (`df.head()`):**
+  Filters `data/raw/2026_01_01_pilot_data/user_preferences_pilot_data.csv` down to rows where `trial_type == "mirror-preference"` and retains only the columns needed downstream (participant metadata, `post_id`, the original text, and the mirror that was selected).  
+  `trial_index` and `prolific_id` are dropped because they are not used downstream, even though the preview tables that follow still list them for reference.  
+  **Preview (`df.head()`):
   ```markdown
   |   trial_index |   participant_id | prolific_id              | post_id                  |   post_number | original_text                                                                                                                                                                                                                                                                                  | selected_mirror   |   selected_position | presentation_order                        |   response_time_ms |   selection_time_ms |
   |--------------:|-----------------:|:-------------------------|:-------------------------|--------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------|--------------------:|:------------------------------------------|-------------------:|--------------------:|

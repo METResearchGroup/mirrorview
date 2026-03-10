@@ -15,8 +15,6 @@ STEP4_COLUMNS = [
     "selected_mirror",
     "selected_mirror_text",
     "participant_id",
-    "prolific_id",
-    "trial_index",
     "post_number",
     "presentation_order",
     "selected_position",
