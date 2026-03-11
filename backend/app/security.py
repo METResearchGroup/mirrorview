@@ -154,17 +154,27 @@ def resolve_rate_limit_scope(path: str) -> str | None:
     return None
 
 
+def _ip_from_forwarded_for(forwarded_for: str) -> str | None:
+    """Extract first client IP from x-forwarded-for header. We trust the edge proxy."""
+    parts = [part.strip() for part in forwarded_for.split(",") if part.strip()]
+    return parts[0] if parts else None
+
+
+def _ip_from_proxy_headers(request: Request) -> str | None:
+    """Try x-forwarded-for then x-real-ip when proxy headers are trusted."""
+    if forwarded := request.headers.get("x-forwarded-for"):
+        if ip := _ip_from_forwarded_for(forwarded):
+            return ip
+    if real_ip := request.headers.get("x-real-ip"):
+        stripped = real_ip.strip()
+        if stripped:
+            return stripped
+    return None
+
+
 def extract_client_ip(request: Request, *, trust_proxy_headers: bool) -> str:
-    if trust_proxy_headers:
-        forwarded_for = request.headers.get("x-forwarded-for")
-        if forwarded_for:
-            # We trust the edge proxy to sanitize this header.
-            parts = [part.strip() for part in forwarded_for.split(",") if part.strip()]
-            if parts:
-                return parts[0]
-        real_ip = request.headers.get("x-real-ip")
-        if real_ip and real_ip.strip():
-            return real_ip.strip()
+    if trust_proxy_headers and (ip := _ip_from_proxy_headers(request)):
+        return ip
     if request.client and request.client.host:
         return request.client.host
     return "unknown"

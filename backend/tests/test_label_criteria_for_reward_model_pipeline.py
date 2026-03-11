@@ -1,18 +1,15 @@
+"""Pytest coverage for the label criteria reward model pipeline."""
+
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownArgumentType=false
+
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
-
-
-# Pytest runs with cwd=backend/ so repo-root packages (experiments/) are not importable by default.
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-
-"""Pytest coverage for the label criteria reward model pipeline."""
 
 
 class TestLabelCriteriaForRewardModel:
@@ -105,7 +102,14 @@ def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:
         def __init__(self) -> None:
             self.calls: list[list[str]] = []
 
-        def structured_batch_completion(self, *, prompts, response_model, model, **kwargs):
+        def structured_batch_completion(
+            self,
+            *,
+            prompts: list[str],
+            response_model: type[Stage1CriteriaLabel],
+            model: str | None = None,
+            **kwargs: Any,
+        ) -> list[Stage1CriteriaLabel]:
             self.calls.append(list(prompts))
             return [
                 Stage1CriteriaLabel(

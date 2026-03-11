@@ -77,6 +77,19 @@ class LLMUnrecoverableError(LLMException):
     category = ExceptionCategory.UNRECOVERABLE
 
 
+def _extract_exception_message(exception: Exception) -> str:
+    message = getattr(exception, "message", str(exception))
+    return message or f"{type(exception).__name__}: {exception}"
+
+
+def _standardize_api_error(exception: Exception, message: str) -> LLMException:
+    """Map APIError by status code: 5xx -> transient, else -> invalid_request."""
+    status_code = getattr(exception, "status_code", None)
+    if status_code and 500 <= status_code < 600:
+        return LLMTransientError(message, original_exception=exception)
+    return LLMInvalidRequestError(message, original_exception=exception)
+
+
 def standardize_litellm_exception(exception: Exception) -> LLMException:
     """Standardize LiteLLM exceptions to internal exception types.
 
@@ -95,53 +108,37 @@ def standardize_litellm_exception(exception: Exception) -> LLMException:
         for debugging purposes while maintaining clean retry logic.
     """
     if litellm_exceptions is None:
-        # Fallback if LiteLLM is not available - treat as transient
         return LLMTransientError(
             f"LiteLLM exception (LiteLLM not available): {exception}",
             original_exception=exception,
         )
 
-    # Extract error message from exception
-    message = getattr(exception, "message", str(exception))
-    if not message:
-        message = f"{type(exception).__name__}: {exception}"
+    message = _extract_exception_message(exception)
 
-    # Standardize LiteLLM exception types to internal types
-    # Non-retryable exceptions (auth/validation errors)
-    if isinstance(exception, litellm_exceptions.AuthenticationError):  # type: ignore[attr-defined]
-        return LLMAuthError(message, original_exception=exception)
-    elif isinstance(exception, litellm_exceptions.PermissionDeniedError):  # type: ignore[attr-defined]
-        return LLMPermissionDeniedError(message, original_exception=exception)
-    elif isinstance(exception, litellm_exceptions.InvalidRequestError):  # type: ignore[attr-defined]
-        # InvalidRequestError is deprecated in favor of BadRequestError, but we handle both
-        return LLMInvalidRequestError(message, original_exception=exception)
-    elif hasattr(litellm_exceptions, "BadRequestError") and isinstance(
-        exception,
-        litellm_exceptions.BadRequestError,  # type: ignore[attr-defined]
-    ):
-        # Handle BadRequestError (replacement for InvalidRequestError in newer LiteLLM versions)
-        return LLMInvalidRequestError(message, original_exception=exception)
-    # Retryable exceptions (transient errors)
-    elif isinstance(
-        exception,
-        (
-            litellm_exceptions.RateLimitError,  # type: ignore[attr-defined]
-            litellm_exceptions.Timeout,  # type: ignore[attr-defined]
-            litellm_exceptions.ServiceUnavailableError,  # type: ignore[attr-defined]
-        ),
-    ):
+    # Type -> internal exception class. Order matters: check specific before APIError.
+    mappings: list[tuple[type[Exception], type[LLMException]]] = [
+        (litellm_exceptions.AuthenticationError, LLMAuthError),  # type: ignore[attr-defined]
+        (litellm_exceptions.PermissionDeniedError, LLMPermissionDeniedError),  # type: ignore[attr-defined]
+        (litellm_exceptions.InvalidRequestError, LLMInvalidRequestError),  # type: ignore[attr-defined]
+    ]
+    if hasattr(litellm_exceptions, "BadRequestError"):
+        mappings.append(
+            (litellm_exceptions.BadRequestError, LLMInvalidRequestError)  # type: ignore[attr-defined]
+        )
+    for exc_type, llm_cls in mappings:
+        if isinstance(exception, exc_type):
+            return llm_cls(message, original_exception=exception)
+
+    # Retryable (transient) exception types
+    transient_types = (
+        litellm_exceptions.RateLimitError,  # type: ignore[attr-defined]
+        litellm_exceptions.Timeout,  # type: ignore[attr-defined]
+        litellm_exceptions.ServiceUnavailableError,  # type: ignore[attr-defined]
+    )
+    if isinstance(exception, transient_types):
         return LLMTransientError(message, original_exception=exception)
-    # APIError - check status code to determine if transient
-    elif isinstance(exception, litellm_exceptions.APIError):  # type: ignore[attr-defined]
-        status_code = getattr(exception, "status_code", None)
-        # 4xx errors (except auth which is handled above) are usually not retryable
-        # 5xx errors are transient
-        if status_code and 500 <= status_code < 600:
-            return LLMTransientError(message, original_exception=exception)
-        else:
-            # Treat unknown API errors as invalid requests (non-retryable)
-            return LLMInvalidRequestError(message, original_exception=exception)
-    else:
-        # Unknown LiteLLM exception - treat as transient to allow retry
-        # This is safer than failing hard on unknown errors
-        return LLMTransientError(f"Unknown LiteLLM error: {message}", original_exception=exception)
+
+    if isinstance(exception, litellm_exceptions.APIError):  # type: ignore[attr-defined]
+        return _standardize_api_error(exception, message)
+
+    return LLMTransientError(f"Unknown LiteLLM error: {message}", original_exception=exception)
