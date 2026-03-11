@@ -14,9 +14,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: backend
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -30,8 +27,7 @@ jobs:
         with:
           path: |
             ~/.cache/uv
-            backend/uv.lock
-          key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('backend/pyproject.toml', 'backend/uv.lock') }}
+          key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ matrix.python-version }}-
 
@@ -49,7 +45,7 @@ jobs:
         run: uv sync --extra test --locked
 
       - name: Add project directory to PYTHONPATH
-        run: echo "PYTHONPATH=${{ github.workspace }}/backend" >> $GITHUB_ENV
+        run: echo "PYTHONPATH=${{ github.workspace }}/backend:${{ github.workspace }}" >> $GITHUB_ENV
 
       - name: Get changed Python files
         id: changed
@@ -64,21 +60,17 @@ jobs:
           changed="${{ steps.changed.outputs.all_changed_files }}"
           if [ -n "$changed" ]; then
             mapfile -t files <<< "$changed"
-            rel_paths=()
-            for f in "${files[@]}"; do
-              rel_paths+=("${f#backend/}")
-            done
-            uv run complexipy "${rel_paths[@]}" --max-complexity-allowed 999
+            uv run complexipy "${files[@]}" --max-complexity-allowed 999
           fi
 
       - name: Run Ruff linting
-        run: uv run ruff check .
+        run: PYTHONPATH=backend:. uv run ruff check .
 
       - name: Check code formatting
-        run: uv run ruff format --check .
+        run: PYTHONPATH=backend:. uv run ruff format --check .
 
       - name: Run type checking
-        run: uv run pyright .
+        run: cd backend && PYTHONPATH=. uv run pyright .
 
       - name: Run tests
-        run: uv run pytest
+        run: PYTHONPATH=backend:. uv run pytest backend/tests
