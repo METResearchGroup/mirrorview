@@ -88,6 +88,7 @@ def _load_api_keys() -> dict[str, str | None]:
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
         "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
         "OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY"),
+        "WANDB_API_KEY": os.getenv("WANDB_API_KEY"),
     }
 
 def _is_truthy(value: str | None) -> bool:

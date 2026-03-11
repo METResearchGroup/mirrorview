@@ -29,6 +29,14 @@ dev = [
   "httpx",
   "testcontainers",
 ]
+ml = [
+  "torch",
+  "transformers",
+  "sentencepiece",
+  "scikit-learn",
+  "optuna",
+  "wandb",
+]
 
 [tool.ruff]
 line-length = 100
