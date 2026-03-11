@@ -12,13 +12,13 @@ from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from litellm import ModelResponse
-from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from testcontainers.postgres import PostgresContainer
 from docker.errors import DockerException
 
 from lib.load_env_vars import settings
+from tests.helpers import install_fake_llm
 
 
 def _run_migrations(database_url: str) -> None:
@@ -80,22 +80,20 @@ class TestPersistenceIntegration:
                 _run_migrations(database_url)
 
                 import app.di.providers as providers
+                import app.api.routers.generate as generate
+                import app.api.routers as routers
                 import app.main as main
 
+                importlib.reload(generate)
+                importlib.reload(routers)
                 importlib.reload(providers)
                 importlib.reload(main)
 
-                class _FakeLLM:
-                    def structured_completion(
-                        self,
-                        messages: list[dict[str, Any]],
-                        response_model: type[BaseModel],
-                        model: str | None = None,  # noqa: ARG002
-                        **kwargs: Any,  # noqa: ARG002
-                    ) -> BaseModel:
-                        return response_model(flipped_text="hello (flipped)", explanation="because")
-
-                main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+                install_fake_llm(
+                    main,
+                    flipped_text="hello (flipped)",
+                    explanation="because",
+                )
 
                 submission_id = str(uuid.uuid4())
                 payload = {
@@ -184,22 +182,20 @@ class TestPersistenceIntegration:
                 settings.cache_clear()
 
                 import app.di.providers as providers
+                import app.api.routers.generate as generate
+                import app.api.routers as routers
                 import app.main as main
 
+                importlib.reload(generate)
+                importlib.reload(routers)
                 importlib.reload(providers)
                 importlib.reload(main)
 
-                class _FakeLLM:
-                    def structured_completion(
-                        self,
-                        messages: list[dict[str, Any]],
-                        response_model: type[BaseModel],
-                        model: str | None = None,  # noqa: ARG002
-                        **kwargs: Any,  # noqa: ARG002
-                    ) -> BaseModel:
-                        return response_model(flipped_text="hello (flipped)", explanation="because")
-
-                main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+                install_fake_llm(
+                    main,
+                    flipped_text="hello (flipped)",
+                    explanation="because",
+                )
 
                 submission_id = str(uuid.uuid4())
                 payload = {

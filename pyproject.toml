@@ -1,0 +1,49 @@
+[project]
+name = "mirrorview-backend"
+version = "0.1.0"
+description = "MirrorView FastAPI backend"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+  "pandas",
+  "python-dotenv",
+  "sqlalchemy[asyncio]",
+  "asyncpg",
+  "alembic",
+  "litellm",
+  "openai",
+  "tenacity",
+  "pyyaml",
+  "boto3",
+]
+
+[dependency-groups]
+dev = [
+  "ruff",
+  "pyright",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "httpx",
+  "testcontainers",
+]
+
+[project.optional-dependencies]
+test = [
+  "ruff",
+  "pyright",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "httpx",
+  "testcontainers",
+  "complexipy",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

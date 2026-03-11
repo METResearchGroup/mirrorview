@@ -1,21 +1,24 @@
 from __future__ import annotations
 
 import importlib
-import json
 from typing import Any
 from uuid import uuid4
 
 import pytest
-from litellm import ModelResponse
-from pydantic import BaseModel
+
+from tests.helpers import install_fake_llm
 
 
 def _reload_app(monkeypatch: pytest.MonkeyPatch, **env: str) -> Any:
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
+    import app.api.routers.generate as generate
+    import app.api.routers as routers
     import app.main as main
 
+    importlib.reload(generate)
+    importlib.reload(routers)
     importlib.reload(main)
     return main
 
@@ -31,37 +34,13 @@ def _payload(text: str) -> dict[str, Any]:
     }
 
 
-def _install_fake_llm(main: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-    class _FakeLLM:
-        def structured_completion(
-            self,
-            messages: list[dict[str, Any]],
-            response_model: type[BaseModel],
-            model: str | None = None,  # noqa: ARG002
-            **kwargs: Any,  # noqa: ARG002
-        ) -> BaseModel:
-            return response_model(flipped_text="ok", explanation="ok")
-
-    import app.di.providers as providers
-
-    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
-
-    import ml_tooling.llm.llm_service as llm_service_mod
-
-    def _fake_completion(**kwargs: Any) -> ModelResponse:
-        content = json.dumps({"flipped_text": "ok", "explanation": "ok"})
-        return ModelResponse(choices=[{"message": {"content": content}}])
-
-    monkeypatch.setattr(llm_service_mod.litellm, "completion", _fake_completion)
-
-
 def test_generate_endpoint_rate_limited(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _reload_app(
         monkeypatch,
         CORS_ORIGINS="http://localhost:3000",
         RATE_LIMIT_GENERATE="1/minute",
     )
-    _install_fake_llm(main, monkeypatch)
+    install_fake_llm(main)
 
     from fastapi.testclient import TestClient
 
@@ -83,7 +62,7 @@ def test_payload_too_large_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
         CORS_ORIGINS="http://localhost:3000",
         MAX_REQUEST_BODY_BYTES="150",
     )
-    _install_fake_llm(main, monkeypatch)
+    install_fake_llm(main)
 
     from fastapi.testclient import TestClient
 
