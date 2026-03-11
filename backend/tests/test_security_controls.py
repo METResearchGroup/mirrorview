@@ -1,13 +1,19 @@
 import importlib
 from uuid import uuid4
 
+from tests.helpers import install_fake_llm
+
 
 def _reload_app(monkeypatch, **env: str):
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
+    import app.api.routers.generate as generate
+    import app.api.routers as routers
     import app.main as main
 
+    importlib.reload(generate)
+    importlib.reload(routers)
     importlib.reload(main)
     return main
 
@@ -23,23 +29,13 @@ def _payload(text: str) -> dict:
     }
 
 
-def _install_fake_llm(main):
-    class _FakeLLM:
-        def structured_completion(self, messages, response_model, model=None):
-            return response_model(flipped_text="ok", explanation="ok")
-
-    import app.di.providers as providers
-
-    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
-
-
 def test_generate_endpoint_rate_limited(monkeypatch):
     main = _reload_app(
         monkeypatch,
         CORS_ORIGINS="http://localhost:3000",
         RATE_LIMIT_GENERATE="1/minute",
     )
-    _install_fake_llm(main)
+    install_fake_llm(main)
 
     from fastapi.testclient import TestClient
 
@@ -61,7 +57,7 @@ def test_payload_too_large_rejected(monkeypatch):
         CORS_ORIGINS="http://localhost:3000",
         MAX_REQUEST_BODY_BYTES="150",
     )
-    _install_fake_llm(main)
+    install_fake_llm(main)
 
     from fastapi.testclient import TestClient
 
