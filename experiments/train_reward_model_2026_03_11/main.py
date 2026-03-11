@@ -22,6 +22,7 @@ from backend.lib.constants import ROOT_DIR as BACKEND_ROOT
 from backend.ml_tooling.optuna import OptunaOptimizer
 from backend.ml_tooling.wandb import WandbTelemetry
 from experiments.train_reward_model_2026_03_11.train import TrainingConfig, train_once
+
 DEFAULT_DATASET = (
     BACKEND_ROOT
     / "experiments"
@@ -56,9 +57,7 @@ def _run_id(prefix: str) -> str:
 
 def _write_best_run(best: dict[str, Any]) -> None:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    (RUNS_DIR / "best_run.json").write_text(
-        json.dumps(best, indent=2, sort_keys=True, default=str)
-    )
+    (RUNS_DIR / "best_run.json").write_text(json.dumps(best, indent=2, sort_keys=True, default=str))
 
 
 def _grid_search(args: argparse.Namespace) -> dict[str, Any]:
@@ -103,7 +102,10 @@ def _grid_search(args: argparse.Namespace) -> dict[str, Any]:
         result = train_once(config=config, run_dir=run_dir, telemetry=telemetry)
         current = {"config": asdict(config), **result}
 
-        if best_run is None or current["best_metrics"]["macro_f1"] > best_run["best_metrics"]["macro_f1"]:
+        if (
+            best_run is None
+            or current["best_metrics"]["macro_f1"] > best_run["best_metrics"]["macro_f1"]
+        ):
             best_run = current
 
     if best_run is None:

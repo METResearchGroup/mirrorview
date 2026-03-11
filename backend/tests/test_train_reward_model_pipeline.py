@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+# test uses dynamic module loading and mocks; suppress unknown/private diagnostics
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownParameterType=false
+# pyright: reportUnknownArgumentType=false
+# pyright: reportUnknownLambdaType=false
+# pyright: reportArgumentType=false
+# pyright: reportMissingParameterType=false
+# pyright: reportPrivateUsage=false
+
 from pathlib import Path
 import sys
 from types import ModuleType
 import importlib.util
 
-import numpy as np
 import pandas as pd
 import pytest
+
+pytest.importorskip("torch")
 import torch
 
 from backend.lib.constants import ROOT_DIR

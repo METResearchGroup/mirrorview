@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+# optuna has incomplete typing; suppress unknown-member/parameter diagnostics
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownParameterType=false
+
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -34,7 +38,7 @@ class OptunaOptimizer:
         self.direction = direction
         self.search_space = search_space
 
-    def suggest_hyperparameters(self, trial) -> dict[str, Any]:
+    def suggest_hyperparameters(self, trial: Any) -> dict[str, Any]:
         return {
             "learning_rate": trial.suggest_float(
                 "learning_rate",
@@ -45,7 +49,9 @@ class OptunaOptimizer:
             "batch_size": trial.suggest_categorical("batch_size", self.search_space.batch_size),
             "epochs": trial.suggest_categorical("epochs", self.search_space.epochs),
             "max_length": trial.suggest_categorical("max_length", self.search_space.max_length),
-            "weight_decay": trial.suggest_categorical("weight_decay", self.search_space.weight_decay),
+            "weight_decay": trial.suggest_categorical(
+                "weight_decay", self.search_space.weight_decay
+            ),
         }
 
     def optimize(
