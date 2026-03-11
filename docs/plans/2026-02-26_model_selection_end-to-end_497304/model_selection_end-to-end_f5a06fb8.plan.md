@@ -37,7 +37,7 @@ Outline the verification plan for the model selection feature so we can prove th
 ## Manual Verification
 
 - From `backend/` run `uv run pytest` (or `uv run pytest -k "not persistence_integration"` if Docker dependencies fail) and confirm every test suite (registry, generate_response, generation_service, persistence) passes without failures.
-- Start the backend with `cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000` and manually exercise:
+- Start the backend with `PYTHONPATH=backend:. uv run uvicorn app.main:app --host 0.0.0.0 --port 8000` and manually exercise:
   - `GET http://localhost:8000/models` returns 200 with `default_model_id`, a non-empty `models` array, and each entry containing `model_id`, `display_name`, and `provider`.
   - `POST http://localhost:8000/generate_response` with a valid `submission.model_id` from `/models` returns 200 with `flipped_text` and `explanation` and logs the matching model ID.
   - `POST` with `model_id` of a missing entry returns 400 plus a message mentioning the unknown ID, and with `model_id` of a disabled entry returns 400 describing unavailability.

@@ -7,10 +7,12 @@ retries or A/B tests). Stored for serving responses, cost/latency analysis,
 and linking thumbs-up/down and edit feedback to the specific output that was
 shown to the user.
 """
+
 from __future__ import annotations
 
 import datetime as dt
 import uuid
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -45,7 +47,7 @@ class Generation(Base):
     prompt_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(Text, nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    usage: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True),
@@ -54,4 +56,3 @@ class Generation(Base):
     )
 
     submission = relationship("Submission", lazy="joined")
-

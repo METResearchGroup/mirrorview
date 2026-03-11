@@ -11,7 +11,6 @@
 ### Setup
 
 ```bash
-cd backend
 uv sync
 ```
 
@@ -20,7 +19,7 @@ uv sync
 ```bash
 export RUN_MODE=local
 export PERSISTENCE_ENABLED=false
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+PYTHONPATH=backend:. uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Persistence-disabled behavior (recommended)
@@ -34,7 +33,7 @@ uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 export PERSISTENCE_ENABLED=true
 export DATABASE_URL=<your Supabase/PG pooler URL>
-uv run alembic upgrade head
+PYTHONPATH=backend:. uv run alembic -c backend/alembic.ini upgrade head
 ```
 
 After that, start the backend with the same `uv run uvicorn ...` command and DI will return the SQL-backed repos and `SqlAlchemyUnitOfWork`.
@@ -63,12 +62,12 @@ The prototype hits `POST /generate_response`, so keep the backend running in per
 1. Start the backend with `RUN_MODE=local` and `PERSISTENCE_ENABLED=false`.
 2. Launch the Next.js prototype with `NEXT_PUBLIC_API_URL=http://localhost:8000`.
 3. Flip a post, inspect logs, and adjust Python/TypeScript code as needed.
-4. Run `uv run pytest` before pushing if you touched backend logic.
+4. Run `PYTHONPATH=backend:. uv run pytest backend/tests` before pushing if you touched backend logic.
 
 ## Verification checklist
 
-- `uv run ruff check .` (run from the `backend/` directory).
-- `uv run pytest`.
+- `PYTHONPATH=backend:. uv run ruff check .`
+- `PYTHONPATH=backend:. uv run pytest backend/tests`
 - `npm run lint`/`npm run test` inside `flip-prototype` if you edit the frontend.
 
 ## Notes

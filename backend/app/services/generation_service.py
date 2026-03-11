@@ -1,21 +1,32 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 import anyio
+from anyio.to_thread import run_sync
+from pydantic import BaseModel
 
 from app.db.uow import UnitOfWork
 from app.db.repos.interfaces import GenerationRepo, SubmissionRepo
 from app.schemas import FlipResponse, GenerateResponseRequest
 from fastapi import HTTPException
 from ml_tooling.llm.config.model_registry import ModelConfigRegistry
-from ml_tooling.llm.providers.registry import LLMProviderRegistry
+
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class LLMClient(Protocol):
-    def structured_completion(self, messages: list[dict[str, Any]], response_model: Any, model: str | None = None):
+    def structured_completion(
+        self,
+        messages: list[dict[str, Any]],
+        response_model: type[T],
+        model: str | None = None,
+        **kwargs: Any,
+    ) -> T:
         """Synchronous LLM call returning an instance of response_model."""
+        ...
 
 
 class GenerationService:
@@ -44,25 +55,11 @@ class GenerationService:
         litellm_route = model_config.get_litellm_route()
         provider_name = model_config.provider_name
 
-        try:
-            provider_obj = LLMProviderRegistry.get_provider(selected_model_id)
-        except Exception:
-            provider_obj = None
-
-        supports_structured = False
-        try:
-            supports_structured = (
-                provider_obj is not None
-                and provider_obj.format_structured_output(FlipResponse, {}) is not None
-            )
-        except Exception:
-            supports_structured = False
-
         start = time.monotonic()
         timeout_s = 30
         try:
             with anyio.fail_after(timeout_s):
-                flip: FlipResponse = await anyio.to_thread.run_sync(
+                flip: FlipResponse = await run_sync(
                     lambda: self._llm.structured_completion(
                         messages=messages,
                         response_model=FlipResponse,
@@ -70,10 +67,8 @@ class GenerationService:
                     ),
                     abandon_on_cancel=True,
                 )
-        except TimeoutError as e:
-            raise HTTPException(status_code=504, detail="LLM request timed out") from e
-        except Exception as e:
-            raise
+        except TimeoutError as exc:
+            raise HTTPException(status_code=504, detail="LLM request timed out") from exc
         latency_ms = int((time.monotonic() - start) * 1000)
 
         async with self._uow.transaction():
@@ -81,7 +76,7 @@ class GenerationService:
             await self._generations.add(
                 submission_id=submission.id,
                 flip=flip,
-                provider=model_config.provider_name,
+                provider=provider_name,
                 model_id=selected_model_id,
                 model_name=litellm_route,
                 prompt_name=None,
@@ -91,4 +86,3 @@ class GenerationService:
             )
 
         return flip
-

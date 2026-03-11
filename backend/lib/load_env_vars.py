@@ -48,6 +48,7 @@ class Settings(BaseModel):
 def settings() -> Settings:
     return _build_settings()
 
+
 def _build_settings() -> Settings:
     _load_dotenv()
 
@@ -63,11 +64,14 @@ def _build_settings() -> Settings:
         api_keys=api_keys,
     )
 
+
 def _repo_env_path() -> Path:
     return ROOT_DIR / ".env"
 
+
 def _load_dotenv() -> None:
     load_dotenv(_repo_env_path())
+
 
 def _load_run_mode() -> str:
     run_mode = os.getenv("RUN_MODE", "test").strip().lower()
@@ -75,13 +79,16 @@ def _load_run_mode() -> str:
         raise ValueError("RUN_MODE must be set to either 'local', 'test', or 'prod'")
     return run_mode
 
+
 def _load_persistence_enabled(run_mode: str) -> bool:
     persistence_default = "false" if run_mode == "test" else "true"
     persistence_enabled = _is_truthy(os.getenv("PERSISTENCE_ENABLED", persistence_default))
     return persistence_enabled
 
+
 def _load_database_url() -> str | None:
     return os.getenv("DATABASE_URL")
+
 
 def _load_api_keys() -> dict[str, str | None]:
     return {
@@ -90,6 +97,7 @@ def _load_api_keys() -> dict[str, str | None]:
         "OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY"),
         "WANDB_API_KEY": os.getenv("WANDB_API_KEY"),
     }
+
 
 def _is_truthy(value: str | None) -> bool:
     return bool(value and value.strip().lower() in _TRUTHY_VALUES)

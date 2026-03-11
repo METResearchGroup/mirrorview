@@ -1,18 +1,15 @@
+"""Pytest coverage for the label criteria reward model pipeline."""
+
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownArgumentType=false
+
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
-
-
-# Pytest runs with cwd=backend/ so repo-root packages (experiments/) are not importable by default.
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-
-"""Pytest coverage for the label criteria reward model pipeline."""
 
 
 class TestLabelCriteriaForRewardModel:
@@ -52,178 +49,192 @@ class TestLabelCriteriaForRewardModel:
         assert set(out["label_id"].tolist()) == expected_ids
 
 
-def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:
-    from experiments.label_criteria_for_reward_model_2026_03_10.schemas import Stage1CriteriaLabel
-    from experiments.label_criteria_for_reward_model_2026_03_10.step2_label_with_llm import (
-        label_with_llm,
-    )
+class TestStep2LabelWithLlm:
+    """Tests for step2_label_with_llm resume and deduplication behavior."""
 
-    input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
-    labels_dir = tmp_path / "llm_labels"
-    success_csv = tmp_path / "successfully_labeled_flips.csv"
+    def test_step2_skip_resume_appends_without_duplicates(self, tmp_path: Path) -> None:
+        from experiments.label_criteria_for_reward_model_2026_03_10.schemas import (
+            Stage1CriteriaLabel,
+        )
+        from experiments.label_criteria_for_reward_model_2026_03_10.step2_label_with_llm import (
+            label_with_llm,
+        )
 
-    df = pd.DataFrame(
-        [
-            {
-                "label_id": "p1::human",
-                "post_id": "p1",
-                "post_primary_key": "p1",
-                "mirror_id": "human",
-                "mirror_text": "mirror one",
-                "original_text": "orig one",
-                "sampled_stance": "left",
-                "sample_toxicity_type": "sample_low_toxicity",
-            },
-            {
-                "label_id": "p1::llama",
-                "post_id": "p1",
-                "post_primary_key": "p1",
-                "mirror_id": "llama",
-                "mirror_text": "mirror two",
-                "original_text": "orig one",
-                "sampled_stance": "left",
-                "sample_toxicity_type": "sample_low_toxicity",
-            },
-            {
-                "label_id": "p1::qwen",
-                "post_id": "p1",
-                "post_primary_key": "p1",
-                "mirror_id": "qwen",
-                "mirror_text": "mirror three",
-                "original_text": "orig one",
-                "sampled_stance": "left",
-                "sample_toxicity_type": "sample_low_toxicity",
-            },
-        ]
-    )
-    df.to_csv(input_csv, index=False)
+        input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
+        labels_dir = tmp_path / "llm_labels"
+        success_csv = tmp_path / "successfully_labeled_flips.csv"
 
-    # Pretend one label already succeeded.
-    pd.DataFrame({"label_id": ["p1::human"]}).to_csv(success_csv, index=False)
+        df = pd.DataFrame(
+            [
+                {
+                    "label_id": "p1::human",
+                    "post_id": "p1",
+                    "post_primary_key": "p1",
+                    "mirror_id": "human",
+                    "mirror_text": "mirror one",
+                    "original_text": "orig one",
+                    "sampled_stance": "left",
+                    "sample_toxicity_type": "sample_low_toxicity",
+                },
+                {
+                    "label_id": "p1::llama",
+                    "post_id": "p1",
+                    "post_primary_key": "p1",
+                    "mirror_id": "llama",
+                    "mirror_text": "mirror two",
+                    "original_text": "orig one",
+                    "sampled_stance": "left",
+                    "sample_toxicity_type": "sample_low_toxicity",
+                },
+                {
+                    "label_id": "p1::qwen",
+                    "post_id": "p1",
+                    "post_primary_key": "p1",
+                    "mirror_id": "qwen",
+                    "mirror_text": "mirror three",
+                    "original_text": "orig one",
+                    "sampled_stance": "left",
+                    "sample_toxicity_type": "sample_low_toxicity",
+                },
+            ],
+        )
+        df.to_csv(input_csv, index=False)
 
-    class DummyLLM:
-        def __init__(self) -> None:
-            self.calls: list[list[str]] = []
+        # Pretend one label already succeeded.
+        pd.DataFrame({"label_id": ["p1::human"]}).to_csv(success_csv, index=False)
 
-        def structured_batch_completion(self, *, prompts, response_model, model, **kwargs):
-            self.calls.append(list(prompts))
-            return [
-                Stage1CriteriaLabel(
-                    political_us=1,
-                    opinion_not_news=1,
-                    complete=1,
-                    self_contained=1,
-                    target_topic=1,
-                    clear_political_stance=1,
-                )
-                for _ in prompts
+        class DummyLLM:
+            def __init__(self) -> None:
+                self.calls: list[list[str]] = []
+
+            def structured_batch_completion(
+                self,
+                *,
+                prompts: list[str],
+                response_model: type[Stage1CriteriaLabel],
+                model: str | None = None,
+                **kwargs: Any,
+            ) -> list[Stage1CriteriaLabel]:
+                self.calls.append(list(prompts))
+                return [
+                    Stage1CriteriaLabel(
+                        political_us=1,
+                        opinion_not_news=1,
+                        complete=1,
+                        self_contained=1,
+                        target_topic=1,
+                        clear_political_stance=1,
+                    )
+                    for _ in prompts
+                ]
+
+        dummy = DummyLLM()
+
+        stats = label_with_llm(
+            input_csv=input_csv,
+            labels_dir=labels_dir,
+            success_csv=success_csv,
+            model="gpt-5-nano",
+            batch_size=10,
+            max_batches=1,
+            resume=True,
+            llm_service=dummy,  # type: ignore[arg-type]
+        )
+        assert stats.processed == 2
+        assert stats.succeeded == 2
+
+        label_files = sorted(labels_dir.glob("*.csv"))
+        assert len(label_files) == 1
+        labeled = pd.read_csv(label_files[0])
+        assert set(labeled["label_id"].tolist()) == {"p1::llama", "p1::qwen"}
+
+        success = pd.read_csv(success_csv)
+        assert success["label_id"].nunique() == len(success)
+        assert set(success["label_id"].tolist()) == {"p1::human", "p1::llama", "p1::qwen"}
+
+        # Rerun: should skip everything and not append duplicates.
+        stats2 = label_with_llm(
+            input_csv=input_csv,
+            labels_dir=labels_dir,
+            success_csv=success_csv,
+            model="gpt-5-nano",
+            batch_size=10,
+            max_batches=1,
+            resume=True,
+            llm_service=dummy,  # type: ignore[arg-type]
+        )
+        assert stats2.processed == 0
+        assert stats2.succeeded == 0
+
+        success2 = pd.read_csv(success_csv)
+        assert success2["label_id"].nunique() == len(success2)
+        assert set(success2["label_id"].tolist()) == {"p1::human", "p1::llama", "p1::qwen"}
+
+        # Prompt integration: each prompt should contain both ORIGINAL and MIRROR texts.
+        assert dummy.calls, "Expected at least one LLM call"
+        first_call_prompts = dummy.calls[0]
+        assert any("ORIGINAL POST" in p and "MIRROR" in p for p in first_call_prompts)
+        assert any("orig one" in p for p in first_call_prompts)
+
+
+class TestStep3FinalizeLabels:
+    """Tests for step3_finalize_labels criteria sum and stage1 filter."""
+
+    def test_step3_criteria_sum_and_passes_stage1_filter(self, tmp_path: Path) -> None:
+        from experiments.label_criteria_for_reward_model_2026_03_10.step3_finalize_labels import (
+            finalize_labels,
+        )
+
+        input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
+        labels_dir = tmp_path / "llm_labels"
+        output_csv = tmp_path / "step3_all_mirror_criteria_labels.csv"
+
+        inputs = pd.DataFrame(
+            [
+                {"label_id": "a::human", "mirror_text": "m1", "original_text": "o1"},
+                {"label_id": "b::human", "mirror_text": "m2", "original_text": "o2"},
             ]
+        )
+        inputs.to_csv(input_csv, index=False)
 
-    dummy = DummyLLM()
+        labels = pd.DataFrame(
+            [
+                {
+                    "label_id": "a::human",
+                    "model": "gpt-5-nano",
+                    "political_us": 1,
+                    "opinion_not_news": 1,
+                    "complete": 1,
+                    "self_contained": 1,
+                    "target_topic": 1,
+                    "clear_political_stance": 1,
+                },
+                {
+                    "label_id": "b::human",
+                    "model": "gpt-5-nano",
+                    "political_us": 1,
+                    "opinion_not_news": 1,
+                    "complete": 1,
+                    "self_contained": 1,
+                    "target_topic": 0,
+                    "clear_political_stance": 0,
+                },
+            ]
+        )
+        labels_dir.mkdir(parents=True, exist_ok=True)
+        labels.to_csv(labels_dir / "2026_03_10-00:00:00.csv", index=False)
 
-    stats = label_with_llm(
-        input_csv=input_csv,
-        labels_dir=labels_dir,
-        success_csv=success_csv,
-        model="gpt-5-nano",
-        batch_size=10,
-        max_batches=1,
-        resume=True,
-        llm_service=dummy,  # type: ignore[arg-type]
-    )
-    assert stats.processed == 2
-    assert stats.succeeded == 2
+        out = finalize_labels(
+            input_csv=input_csv,
+            labels_dir=labels_dir,
+            output_csv=output_csv,
+            require_all_labeled=True,
+        )
+        assert set(out["label_id"].tolist()) == {"a::human", "b::human"}
+        sums = dict(zip(out["label_id"], out["criteria_sum"], strict=True))
+        passes = dict(zip(out["label_id"], out["passes_stage1_filter"], strict=True))
 
-    label_files = sorted(labels_dir.glob("*.csv"))
-    assert len(label_files) == 1
-    labeled = pd.read_csv(label_files[0])
-    assert set(labeled["label_id"].tolist()) == {"p1::llama", "p1::qwen"}
-
-    success = pd.read_csv(success_csv)
-    assert success["label_id"].nunique() == len(success)
-    assert set(success["label_id"].tolist()) == {"p1::human", "p1::llama", "p1::qwen"}
-
-    # Rerun: should skip everything and not append duplicates.
-    stats2 = label_with_llm(
-        input_csv=input_csv,
-        labels_dir=labels_dir,
-        success_csv=success_csv,
-        model="gpt-5-nano",
-        batch_size=10,
-        max_batches=1,
-        resume=True,
-        llm_service=dummy,  # type: ignore[arg-type]
-    )
-    assert stats2.processed == 0
-    assert stats2.succeeded == 0
-
-    success2 = pd.read_csv(success_csv)
-    assert success2["label_id"].nunique() == len(success2)
-    assert set(success2["label_id"].tolist()) == {"p1::human", "p1::llama", "p1::qwen"}
-
-    # Prompt integration: each prompt should contain both ORIGINAL and MIRROR texts.
-    assert dummy.calls, "Expected at least one LLM call"
-    first_call_prompts = dummy.calls[0]
-    assert any("ORIGINAL POST" in p and "MIRROR" in p for p in first_call_prompts)
-    assert any("orig one" in p for p in first_call_prompts)
-
-
-def test_step3_criteria_sum_and_passes_stage1_filter(tmp_path: Path) -> None:
-    from experiments.label_criteria_for_reward_model_2026_03_10.step3_finalize_labels import (
-        finalize_labels,
-    )
-
-    input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
-    labels_dir = tmp_path / "llm_labels"
-    output_csv = tmp_path / "step3_all_mirror_criteria_labels.csv"
-
-    inputs = pd.DataFrame(
-        [
-            {"label_id": "a::human", "mirror_text": "m1", "original_text": "o1"},
-            {"label_id": "b::human", "mirror_text": "m2", "original_text": "o2"},
-        ]
-    )
-    inputs.to_csv(input_csv, index=False)
-
-    labels = pd.DataFrame(
-        [
-            {
-                "label_id": "a::human",
-                "model": "gpt-5-nano",
-                "political_us": 1,
-                "opinion_not_news": 1,
-                "complete": 1,
-                "self_contained": 1,
-                "target_topic": 1,
-                "clear_political_stance": 1,
-            },
-            {
-                "label_id": "b::human",
-                "model": "gpt-5-nano",
-                "political_us": 1,
-                "opinion_not_news": 1,
-                "complete": 1,
-                "self_contained": 1,
-                "target_topic": 0,
-                "clear_political_stance": 0,
-            },
-        ]
-    )
-    labels_dir.mkdir(parents=True, exist_ok=True)
-    labels.to_csv(labels_dir / "2026_03_10-00:00:00.csv", index=False)
-
-    out = finalize_labels(
-        input_csv=input_csv,
-        labels_dir=labels_dir,
-        output_csv=output_csv,
-        require_all_labeled=True,
-    )
-    assert set(out["label_id"].tolist()) == {"a::human", "b::human"}
-    sums = dict(zip(out["label_id"], out["criteria_sum"], strict=True))
-    passes = dict(zip(out["label_id"], out["passes_stage1_filter"], strict=True))
-
-    assert sums["a::human"] == 6
-    assert passes["a::human"] == 1
-    assert sums["b::human"] == 4
-    assert passes["b::human"] == 0
-
+        assert sums["a::human"] == 6
+        assert passes["a::human"] == 1
+        assert sums["b::human"] == 4
+        assert passes["b::human"] == 0

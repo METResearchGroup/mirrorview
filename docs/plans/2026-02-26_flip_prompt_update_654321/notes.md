@@ -11,4 +11,4 @@ Align the `FLIP_PROMPT` string with the requested social psychology instructions
 
 ## Verification
 
-- `cd backend && python - <<'PY'\nfrom prompts import FLIP_PROMPT\nprint(FLIP_PROMPT)\nPY` (printed prompt text matches the new researcher instructions).
+- `PYTHONPATH=backend:. uv run python - <<'PY'\nfrom prompts import FLIP_PROMPT\nprint(FLIP_PROMPT)\nPY` (printed prompt text matches the new researcher instructions).

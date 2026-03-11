@@ -1,4 +1,9 @@
-from app.db.repos.interfaces import EditFeedbackRepo, GenerationRepo, SubmissionRepo, ThumbFeedbackRepo
+from app.db.repos.interfaces import (
+    EditFeedbackRepo,
+    GenerationRepo,
+    SubmissionRepo,
+    ThumbFeedbackRepo,
+)
 
 __all__ = [
     "EditFeedbackRepo",
@@ -6,4 +11,3 @@ __all__ = [
     "SubmissionRepo",
     "ThumbFeedbackRepo",
 ]
-

@@ -29,7 +29,9 @@ def join_preferences_with_mirrors(
         raise ValueError("Mirrors data missing required column `post_primary_key`.")
 
     expected_mirror_cols = list(MIRROR_ID_TO_COLUMN.values())
-    missing_mirrors_cols = [c for c in [*JOIN_COLUMNS, *expected_mirror_cols] if c not in mirrors.columns]
+    missing_mirrors_cols = [
+        c for c in [*JOIN_COLUMNS, *expected_mirror_cols] if c not in mirrors.columns
+    ]
     if missing_mirrors_cols:
         raise ValueError(f"Mirrors CSV missing expected columns: {missing_mirrors_cols}")
 

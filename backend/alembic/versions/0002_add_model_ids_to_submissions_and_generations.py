@@ -23,7 +23,9 @@ def upgrade() -> None:
     op.add_column("generations", sa.Column("model_id", sa.Text(), nullable=True))
 
     # Backfill deterministic default for existing submissions.
-    op.execute("update submissions set selected_model_id = 'gpt-5-nano' where selected_model_id is null")
+    op.execute(
+        "update submissions set selected_model_id = 'gpt-5-nano' where selected_model_id is null"
+    )
     op.alter_column("submissions", "selected_model_id", existing_type=sa.Text(), nullable=False)
 
     # Best-effort backfill for existing generations.

@@ -25,11 +25,4 @@ Criteria definitions (binary):
 def build_stage1_criteria_prompt(*, original_text: str, mirror_text: str) -> str:
     original = (original_text or "").strip()
     mirror = (mirror_text or "").strip()
-    return (
-        CRITERIA_RUBRIC
-        + "\nORIGINAL POST:\n"
-        + original
-        + "\n\nMIRROR:\n"
-        + mirror
-    )
-
+    return CRITERIA_RUBRIC + "\nORIGINAL POST:\n" + original + "\n\nMIRROR:\n" + mirror

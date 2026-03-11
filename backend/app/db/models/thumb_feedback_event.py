@@ -5,6 +5,7 @@ submission and optionally to a specific generation_id (SET NULL if that
 generation is deleted). Stored for explicit user feedback on output quality,
 used to evaluate and improve prompts and models.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -59,4 +60,3 @@ class ThumbFeedbackEvent(Base):
         nullable=False,
         server_default=func.now(),
     )
-

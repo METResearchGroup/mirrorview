@@ -1,0 +1,20 @@
+# See https://pre-commit.com for more information
+# Ruff hooks mirror CI (.github/workflows/ci.yml): ruff check + ruff format --check
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.2
+    hooks:
+      # Same as CI: uv run ruff check .
+      - id: ruff-check
+        args: [--fix]
+      # Same as CI: uv run ruff format --check .
+      - id: ruff-format
+        args: [--check]
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        entry: bash -lc "cd backend && PYTHONPATH=$(pwd) uv run --extra test pyright ."
+        language: system
+        pass_filenames: false
+

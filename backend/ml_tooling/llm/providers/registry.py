@@ -60,4 +60,3 @@ class LLMProviderRegistry:
 LLMProviderRegistry.register(OpenAIProvider)
 LLMProviderRegistry.register(AnthropicProvider)
 LLMProviderRegistry.register(OpenRouterProvider)
-
