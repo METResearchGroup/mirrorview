@@ -8,7 +8,7 @@ Binary01 = Annotated[int, Field(ge=0, le=1)]
 
 
 class Stage1CriteriaLabel(BaseModel):
-    """Six binary criteria from issue #28 for reward-model Stage 1 filtering."""
+    """Six binary criteria for reward-model Stage 1 filtering."""
 
     political_us: Binary01
     opinion_not_news: Binary01
