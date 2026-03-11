@@ -22,160 +22,160 @@ def _reload_app_with_env(monkeypatch: pytest.MonkeyPatch, cors_origins: str | No
     return main
 
 
-def test_generate_response_returns_flipped_text(monkeypatch: pytest.MonkeyPatch) -> None:
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+class TestGenerateResponse:
+    """Tests for the /generate_response API endpoint."""
 
-    class _FakeLLM:
-        def structured_completion(
-            self,
-            messages: list[dict[str, Any]],
-            response_model: type[BaseModel],
-            model: str | None = None,  # noqa: ARG002
-            **kwargs: Any,  # noqa: ARG002
-        ) -> BaseModel:
-            return response_model(flipped_text="hello (flipped)", explanation="because")
+    def test_generate_response_returns_flipped_text(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
-    import app.di.providers as providers
+        class _FakeLLM:
+            def structured_completion(
+                self,
+                messages: list[dict[str, Any]],
+                response_model: type[BaseModel],
+                model: str | None = None,  # noqa: ARG002
+                **kwargs: Any,  # noqa: ARG002
+            ) -> BaseModel:
+                return response_model(flipped_text="hello (flipped)", explanation="because")
 
-    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+        import app.di.providers as providers
 
-    from fastapi.testclient import TestClient
+        main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
 
-    client = TestClient(main.app)
-    submission_id = str(uuid4())
-    res = client.post(
-        "/generate_response",
-        json={
+        from fastapi.testclient import TestClient
+
+        client = TestClient(main.app)
+        submission_id = str(uuid4())
+        res = client.post(
+            "/generate_response",
+            json={
+                "text": "hello",
+                "submission": {
+                    "id": submission_id,
+                    "created_at": "2026-02-03T00:00:00.000Z",
+                    "input_text": "hello",
+                },
+            },
+        )
+        assert res.status_code == 200
+        assert res.json()["flipped_text"] == "hello (flipped)"
+        main.app.dependency_overrides.clear()
+
+    def test_generate_response_accepts_submission_context_and_logs_id(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+
+        class _FakeLLM:
+            def structured_completion(
+                self,
+                messages: list[dict[str, Any]],
+                response_model: type[BaseModel],
+                model: str | None = None,  # noqa: ARG002
+                **kwargs: Any,  # noqa: ARG002
+            ) -> BaseModel:
+                return response_model(flipped_text="hello (flipped)", explanation="because")
+
+        import app.di.providers as providers
+
+        main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+
+        submission_id = str(uuid4())
+        payload = {
             "text": "hello",
             "submission": {
                 "id": submission_id,
                 "created_at": "2026-02-03T00:00:00.000Z",
                 "input_text": "hello",
             },
-        },
-    )
-    assert res.status_code == 200
-    assert res.json()["flipped_text"] == "hello (flipped)"
-    main.app.dependency_overrides.clear()
+        }
 
+        from fastapi.testclient import TestClient
 
-def test_generate_response_accepts_submission_context_and_logs_id(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+        caplog.set_level(logging.INFO)
+        client = TestClient(main.app)
+        res = client.post("/generate_response", json=payload)
 
-    class _FakeLLM:
-        def structured_completion(
-            self,
-            messages: list[dict[str, Any]],
-            response_model: type[BaseModel],
-            model: str | None = None,  # noqa: ARG002
-            **kwargs: Any,  # noqa: ARG002
-        ) -> BaseModel:
-            return response_model(flipped_text="hello (flipped)", explanation="because")
+        assert res.status_code == 200
+        expected_result = "hello (flipped)"
+        assert res.json()["flipped_text"] == expected_result
+        assert submission_id in caplog.text
+        main.app.dependency_overrides.clear()
 
-    import app.di.providers as providers
+    def test_cors_allows_configured_origin(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="https://example.com")
 
-    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+        from fastapi.testclient import TestClient
 
-    submission_id = str(uuid4())
-    payload = {
-        "text": "hello",
-        "submission": {
-            "id": submission_id,
-            "created_at": "2026-02-03T00:00:00.000Z",
-            "input_text": "hello",
-        },
-    }
-
-    from fastapi.testclient import TestClient
-
-    caplog.set_level(logging.INFO)
-    client = TestClient(main.app)
-    res = client.post("/generate_response", json=payload)
-
-    assert res.status_code == 200
-    expected_result = "hello (flipped)"
-    assert res.json()["flipped_text"] == expected_result
-    assert submission_id in caplog.text
-    main.app.dependency_overrides.clear()
-
-
-def test_cors_allows_configured_origin(monkeypatch: pytest.MonkeyPatch) -> None:
-    main = _reload_app_with_env(monkeypatch, cors_origins="https://example.com")
-
-    from fastapi.testclient import TestClient
-
-    client = TestClient(main.app)
-    res = client.options(
-        "/generate_response",
-        headers={
-            "Origin": "https://example.com",
-            "Access-Control-Request-Method": "POST",
-        },
-    )
-    assert res.status_code in (200, 204)
-    assert res.headers.get("access-control-allow-origin") == "https://example.com"
-
-
-def test_models_endpoint_returns_default_and_options(monkeypatch: pytest.MonkeyPatch) -> None:
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
-
-    from fastapi.testclient import TestClient
-
-    client = TestClient(main.app)
-    res = client.get("/models")
-    assert res.status_code == 200
-    payload = res.json()
-    assert payload["default_model_id"] == "gpt-5-nano"
-    model_ids = {model["model_id"] for model in payload["models"]}
-    assert "gpt-5-nano" in model_ids
-    assert "openai-gpt-4o-mini" in model_ids
-    assert "gpt-4" not in model_ids
-
-
-def test_generate_response_rejects_unknown_model_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
-
-    from fastapi.testclient import TestClient
-
-    client = TestClient(main.app)
-    submission_id = str(uuid4())
-    res = client.post(
-        "/generate_response",
-        json={
-            "text": "hello",
-            "submission": {
-                "id": submission_id,
-                "created_at": "2026-02-03T00:00:00.000Z",
-                "input_text": "hello",
-                "model_id": "does-not-exist",
+        client = TestClient(main.app)
+        res = client.options(
+            "/generate_response",
+            headers={
+                "Origin": "https://example.com",
+                "Access-Control-Request-Method": "POST",
             },
-        },
-    )
-    assert res.status_code == 400
-    assert "Model is not available" in res.json()["error"]["message"]
-    assert "does-not-exist" in res.json()["error"]["message"]
+        )
+        assert res.status_code in (200, 204)
+        assert res.headers.get("access-control-allow-origin") == "https://example.com"
 
+    def test_models_endpoint_returns_default_and_options(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
-def test_generate_response_rejects_unavailable_model_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+        from fastapi.testclient import TestClient
 
-    from fastapi.testclient import TestClient
+        client = TestClient(main.app)
+        res = client.get("/models")
+        assert res.status_code == 200
+        payload = res.json()
+        assert payload["default_model_id"] == "gpt-5-nano"
+        model_ids = {model["model_id"] for model in payload["models"]}
+        assert "gpt-5-nano" in model_ids
+        assert "openai-gpt-4o-mini" in model_ids
+        assert "gpt-4" not in model_ids
 
-    client = TestClient(main.app)
-    submission_id = str(uuid4())
-    res = client.post(
-        "/generate_response",
-        json={
-            "text": "hello",
-            "submission": {
-                "id": submission_id,
-                "created_at": "2026-02-03T00:00:00.000Z",
-                "input_text": "hello",
-                "model_id": "gpt-4",
+    def test_generate_response_rejects_unknown_model_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+
+        from fastapi.testclient import TestClient
+
+        client = TestClient(main.app)
+        submission_id = str(uuid4())
+        res = client.post(
+            "/generate_response",
+            json={
+                "text": "hello",
+                "submission": {
+                    "id": submission_id,
+                    "created_at": "2026-02-03T00:00:00.000Z",
+                    "input_text": "hello",
+                    "model_id": "does-not-exist",
+                },
             },
-        },
-    )
-    assert res.status_code == 400
-    assert "Model is not available" in res.json()["error"]["message"]
+        )
+        assert res.status_code == 400
+        assert "Model is not available" in res.json()["error"]["message"]
+        assert "does-not-exist" in res.json()["error"]["message"]
+
+    def test_generate_response_rejects_unavailable_model_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+
+        from fastapi.testclient import TestClient
+
+        client = TestClient(main.app)
+        submission_id = str(uuid4())
+        res = client.post(
+            "/generate_response",
+            json={
+                "text": "hello",
+                "submission": {
+                    "id": submission_id,
+                    "created_at": "2026-02-03T00:00:00.000Z",
+                    "input_text": "hello",
+                    "model_id": "gpt-4",
+                },
+            },
+        )
+        assert res.status_code == 400
+        assert "Model is not available" in res.json()["error"]["message"]

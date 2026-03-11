@@ -504,14 +504,20 @@ class LLMService:
             ValueError: If any response content is None
             ValidationError: If any response cannot be parsed into the Pydantic model
         """
-        contents = []
+        results: list[T] = []
         for response in responses:
             content: str | None = response.choices[0].message.content  # type: ignore
             if content is None:
                 raise ValueError("Response content is None. Expected structured output from LLM.")
-            contents.append(content)
-
-        return [response_model.model_validate_json(content) for content in contents]
+            try:
+                results.append(response_model.model_validate_json(content))
+            except Exception:
+                extracted = self._extract_json_from_text(content)
+                if extracted is not None:
+                    results.append(response_model.model_validate_json(extracted))
+                else:
+                    raise
+        return results
 
     def structured_batch_completion(
         self,

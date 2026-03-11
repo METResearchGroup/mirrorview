@@ -69,8 +69,6 @@ class GenerationService:
                 )
         except TimeoutError as exc:
             raise HTTPException(status_code=504, detail="LLM request timed out") from exc
-        except Exception:
-            raise
         latency_ms = int((time.monotonic() - start) * 1000)
 
         async with self._uow.transaction():

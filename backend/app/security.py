@@ -242,7 +242,11 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
             request_id=request_id,
         )
 
-    detail = http_exc.detail.strip() if http_exc.detail.strip() else "Request failed."
+    raw_detail: Any = http_exc.detail
+    if isinstance(raw_detail, str) and raw_detail.strip():
+        detail = raw_detail.strip()
+    else:
+        detail = "Request failed."
     return error_response(
         status_code=status_code,
         code="request_error",
@@ -263,12 +267,13 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = get_request_id(request)
     logger.exception(
-        "Unhandled exception request_id=%s path=%s", get_request_id(request), request.url.path
+        "Unhandled exception request_id=%s path=%s", request_id, request.url.path
     )
     return error_response(
         status_code=500,
         code="internal_error",
         message="Internal server error.",
-        request_id=get_request_id(request),
+        request_id=request_id,
     )

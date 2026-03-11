@@ -20,37 +20,41 @@ def _disable_persistence(monkeypatch: pytest.MonkeyPatch) -> None:
     settings.cache_clear()
 
 
-@pytest.mark.parametrize(
-    "repo_getter, expected_type",
-    [
-        ("get_submission_repo", NullSubmissionRepo),
-        ("get_generation_repo", NullGenerationRepo),
-        ("get_thumb_feedback_repo", NullThumbFeedbackRepo),
-        ("get_edit_feedback_repo", NullEditFeedbackRepo),
-    ],
-)
-def test_null_repos_returned_when_persistence_disabled(
-    monkeypatch: pytest.MonkeyPatch,
-    repo_getter: str,
-    expected_type: type,
-) -> None:
-    _disable_persistence(monkeypatch)
+class TestDiProvidersNullRepos:
+    """Ensure DI returns Null repos when persistence is disabled."""
 
-    from app.di import providers
+    @pytest.mark.parametrize(
+        "repo_getter, expected_type",
+        [
+            ("get_submission_repo", NullSubmissionRepo),
+            ("get_generation_repo", NullGenerationRepo),
+            ("get_thumb_feedback_repo", NullThumbFeedbackRepo),
+            ("get_edit_feedback_repo", NullEditFeedbackRepo),
+        ],
+    )
+    def test_null_repos_returned_when_persistence_disabled(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        repo_getter: str,
+        expected_type: type,
+    ) -> None:
+        _disable_persistence(monkeypatch)
 
-    getter = getattr(providers, repo_getter)
-    repo = getter(session=None)  # type: ignore[call-arg]
+        from app.di import providers
 
-    assert isinstance(repo, expected_type)
+        getter = getattr(providers, repo_getter)
+        repo = getter(session=None)  # type: ignore[call-arg]
 
+        assert isinstance(repo, expected_type)
 
-def test_null_unit_of_work_returned_when_persistence_disabled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _disable_persistence(monkeypatch)
+    def test_null_unit_of_work_returned_when_persistence_disabled(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _disable_persistence(monkeypatch)
 
-    from app.di import providers
+        from app.di import providers
 
-    uow = providers.get_unit_of_work(session=None)  # type: ignore[call-arg]
+        uow = providers.get_unit_of_work(session=None)  # type: ignore[call-arg]
 
-    assert isinstance(uow, NullUnitOfWork)
+        assert isinstance(uow, NullUnitOfWork)
