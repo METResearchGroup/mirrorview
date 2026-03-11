@@ -1390,7 +1390,6 @@ dependencies = [
 
 [package.optional-dependencies]
 test = [
-    { name = "complexipy" },
     { name = "httpx" },
     { name = "pyright" },
     { name = "pytest" },
@@ -1403,6 +1402,7 @@ test = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "complexipy" },
     { name = "httpx" },
     { name = "pyright" },
     { name = "pytest" },
@@ -1418,7 +1418,6 @@ requires-dist = [
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "boto3" },
-    { name = "complexipy", marker = "extra == 'test'" },
     { name = "fastapi" },
     { name = "httpx", marker = "extra == 'test'" },
     { name = "litellm" },
@@ -1442,6 +1441,7 @@ provides-extras = ["test"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "complexipy" },
     { name = "httpx" },
     { name = "pyright" },
     { name = "pytest" },

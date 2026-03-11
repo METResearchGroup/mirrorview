@@ -29,6 +29,7 @@ dev = [
   "pytest-mock",
   "httpx",
   "testcontainers",
+  "complexipy",
 ]
 
 [project.optional-dependencies]
@@ -41,7 +42,6 @@ test = [
   "pytest-mock",
   "httpx",
   "testcontainers",
-  "complexipy",
 ]
 
 [tool.ruff]
