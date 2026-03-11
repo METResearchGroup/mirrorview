@@ -56,4 +56,3 @@ async def submit_edit_feedback(
             status_code=500,
             detail="Failed to record your feedback. Please try again.",
         )
-

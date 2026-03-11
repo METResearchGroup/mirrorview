@@ -34,4 +34,3 @@ class SqlAlchemySubmissionRepo(SubmissionRepo):
         )
 
         await self._session.execute(stmt)
-

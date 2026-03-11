@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 from app.examples import load_examples
@@ -12,7 +16,7 @@ class TestExamplesApi:
             response = client.get("/examples/suggestions")
         assert response.status_code == 200
         payload = response.json()
-        examples = payload.get("examples") or []
+        examples: list[dict[str, Any]] = payload.get("examples") or []
         assert len(examples) == min(3, len(catalog))
         ids = {example["id"] for example in examples}
         assert len(ids) == len(examples)

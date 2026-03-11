@@ -4,32 +4,36 @@ from app.db.session import is_persistence_enabled
 from lib.load_env_vars import settings
 
 
-@pytest.mark.parametrize(
-    ("raw", "expected"),
-    [
-        (None, False),
-        ("", False),
-        ("0", False),
-        ("false", False),
-        ("FALSE", False),
-        ("no", False),
-        ("off", False),
-        ("1", True),
-        ("true", True),
-        ("TRUE", True),
-        ("yes", True),
-        ("on", True),
-        ("t", True),
-    ],
-)
-def test_is_persistence_enabled_parses_truthy_values(monkeypatch: pytest.MonkeyPatch, raw, expected):
-    monkeypatch.setenv("RUN_MODE", "test")
+class TestIsPersistenceEnabled:
+    """Tests for is_persistence_enabled env parsing."""
 
-    if raw is None:
-        monkeypatch.delenv("PERSISTENCE_ENABLED", raising=False)
-    else:
-        monkeypatch.setenv("PERSISTENCE_ENABLED", raw)
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            (None, False),
+            ("", False),
+            ("0", False),
+            ("false", False),
+            ("FALSE", False),
+            ("no", False),
+            ("off", False),
+            ("1", True),
+            ("true", True),
+            ("TRUE", True),
+            ("yes", True),
+            ("on", True),
+            ("t", True),
+        ],
+    )
+    def test_is_persistence_enabled_parses_truthy_values(
+        self, monkeypatch: pytest.MonkeyPatch, raw: str | None, expected: bool
+    ) -> None:
+        monkeypatch.setenv("RUN_MODE", "test")
 
-    settings.cache_clear()
-    assert is_persistence_enabled() is expected
+        if raw is None:
+            monkeypatch.delenv("PERSISTENCE_ENABLED", raising=False)
+        else:
+            monkeypatch.setenv("PERSISTENCE_ENABLED", raw)
 
+        settings.cache_clear()
+        assert is_persistence_enabled() is expected

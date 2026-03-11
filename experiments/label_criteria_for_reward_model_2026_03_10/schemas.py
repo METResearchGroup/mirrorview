@@ -16,4 +16,3 @@ class Stage1CriteriaLabel(BaseModel):
     self_contained: Binary01
     target_topic: Binary01
     clear_political_stance: Binary01
-

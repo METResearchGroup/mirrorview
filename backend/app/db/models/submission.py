@@ -7,10 +7,12 @@ timestamp (client_created_at), server receipt time, and optional client_metadata
 submission via submission_id. Stored for analytics, debugging, and linking
 feedback back to the original request.
 """
+
 from __future__ import annotations
 
 import datetime as dt
 import uuid
+from typing import Any
 
 from sqlalchemy import DateTime, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -31,5 +33,4 @@ class Submission(Base):
         nullable=False,
         server_default=func.now(),
     )
-    client_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-
+    client_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)

@@ -1,7 +1,7 @@
 """Create persistence tables for submissions, generations, and feedback.
 
 Revision ID: 0001_create_persistence_tables
-Revises: 
+Revises:
 Create Date: 2026-02-03
 """
 
@@ -70,7 +70,9 @@ def upgrade() -> None:
 
     op.create_table(
         "thumb_feedback_events",
-        sa.Column("id", sa.BigInteger(), sa.Identity(always=True), primary_key=True, nullable=False),
+        sa.Column(
+            "id", sa.BigInteger(), sa.Identity(always=True), primary_key=True, nullable=False
+        ),
         sa.Column(
             "submission_id",
             postgresql.UUID(as_uuid=True),
@@ -93,11 +95,15 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint("vote in ('up','down')", name="chk_thumb_feedback_vote"),
     )
-    op.create_index("ix_thumb_feedback_events_submission_id", "thumb_feedback_events", ["submission_id"])
+    op.create_index(
+        "ix_thumb_feedback_events_submission_id", "thumb_feedback_events", ["submission_id"]
+    )
 
     op.create_table(
         "edit_feedback_events",
-        sa.Column("id", sa.BigInteger(), sa.Identity(always=True), primary_key=True, nullable=False),
+        sa.Column(
+            "id", sa.BigInteger(), sa.Identity(always=True), primary_key=True, nullable=False
+        ),
         sa.Column(
             "submission_id",
             postgresql.UUID(as_uuid=True),
@@ -119,7 +125,9 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
         ),
     )
-    op.create_index("ix_edit_feedback_events_submission_id", "edit_feedback_events", ["submission_id"])
+    op.create_index(
+        "ix_edit_feedback_events_submission_id", "edit_feedback_events", ["submission_id"]
+    )
 
 
 def downgrade() -> None:
@@ -133,4 +141,3 @@ def downgrade() -> None:
     op.drop_table("generations")
 
     op.drop_table("submissions")
-

@@ -1,0 +1,10 @@
+{
+  "typeCheckingMode": "strict",
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["app", "lib", "ml_tooling", "tests", "alembic", "prompts.py"],
+  "exclude": ["**/__pycache__", ".venv", "alembic/versions"],
+  "extraPaths": [".."],
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false
+}

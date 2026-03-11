@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +25,7 @@ class SqlAlchemyGenerationRepo(GenerationRepo):
         prompt_name: str | None = None,
         prompt_version: str | None = None,
         latency_ms: int | None = None,
-        usage: dict | None = None,
+        usage: dict[str, Any] | None = None,
     ) -> uuid.UUID:
         row = Generation(
             submission_id=submission_id,
@@ -41,4 +42,3 @@ class SqlAlchemyGenerationRepo(GenerationRepo):
         self._session.add(row)
         await self._session.flush()
         return row.id
-

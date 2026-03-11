@@ -1,10 +1,12 @@
 import logging
 import os
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Awaitable, Callable
 from uuid import uuid4
 
-import anyio
+from anyio.to_thread import run_sync
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
@@ -42,10 +44,10 @@ def _parse_cors_origins() -> list[str]:
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if is_persistence_enabled():
         database_url = settings().require_database_url()
-        await anyio.to_thread.run_sync(run_migrations_to_head, database_url, abandon_on_cancel=True)
+        await run_sync(run_migrations_to_head, database_url, abandon_on_cancel=True)
         init_engine(database_url)
     try:
         yield
@@ -112,7 +114,9 @@ def validate_payload_too_large(
                 content_length,
                 body_limit_bytes,
             )
-            return create_request_too_large_response(request_id=request_id, body_limit_bytes=body_limit_bytes)
+            return create_request_too_large_response(
+                request_id=request_id, body_limit_bytes=body_limit_bytes
+            )
     except ValueError:
         logger.warning(
             "invalid_content_length_header request_id=%s path=%s value=%s body_limit_bytes=%s",
@@ -169,7 +173,10 @@ async def _read_request_body_with_limit(
 
 
 @app.middleware("http")
-async def security_middleware(request: Request, call_next):
+async def security_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     request_id = uuid4().hex
     request.state.request_id = request_id
     started = time.monotonic()
@@ -200,7 +207,9 @@ async def security_middleware(request: Request, call_next):
                 exc.read_bytes,
                 body_limit_bytes,
             )
-            return create_request_too_large_response(request_id=request_id, body_limit_bytes=body_limit_bytes)
+            return create_request_too_large_response(
+                request_id=request_id, body_limit_bytes=body_limit_bytes
+            )
         except Exception:
             logger.exception(
                 "request_body_read_failed request_id=%s path=%s body_limit_bytes=%s",
@@ -208,7 +217,9 @@ async def security_middleware(request: Request, call_next):
                 path,
                 body_limit_bytes,
             )
-            return create_request_too_large_response(request_id=request_id, body_limit_bytes=body_limit_bytes)
+            return create_request_too_large_response(
+                request_id=request_id, body_limit_bytes=body_limit_bytes
+            )
 
     scope = resolve_rate_limit_scope(path)
     if scope and request.method != "OPTIONS":
@@ -262,6 +273,7 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
 
 app.include_router(generate_router)
 app.include_router(feedback_router)

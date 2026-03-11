@@ -141,6 +141,92 @@ class LabelingRunStats:
     remaining: int
 
 
+def _resolve_output_path(
+    *,
+    labels_dir_path: Path,
+    output_csv: Path | str | None,
+    run_timestamp: datetime | None,
+) -> Path:
+    if output_csv is None:
+        dt = run_timestamp or datetime.now(tz=timezone.utc)
+        return labels_dir_path / f"{timestamp_for_filename(dt)}.csv"
+    path = Path(output_csv)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _compute_pending_rows(
+    df: pd.DataFrame,
+    success_path: Path,
+    labels_dir_path: Path,
+) -> pd.DataFrame:
+    completed_ids = load_success_ids(success_path) | load_labeled_ids_from_labels_dir(
+        labels_dir_path
+    )
+    return df.loc[~df["label_id"].astype(str).isin(completed_ids), :].reset_index(drop=True)
+
+
+def _build_batches(
+    pending: pd.DataFrame,
+    batch_size: int,
+    max_batches: int | None,
+) -> list[pd.DataFrame]:
+    if batch_size <= 0:
+        raise ValueError("batch_size must be > 0")
+    batches = [
+        pending.iloc[i : i + batch_size, :].reset_index(drop=True)
+        for i in range(0, len(pending), batch_size)
+    ]
+    if max_batches is not None:
+        if max_batches <= 0:
+            raise ValueError("max_batches must be > 0 when provided")
+        batches = batches[:max_batches]
+    return batches
+
+
+def _process_batch(
+    batch_df: pd.DataFrame,
+    service: LLMService,
+    model: str,
+    batch_idx: int = 1,
+) -> tuple[pd.DataFrame, list[str]]:
+    prompts = [
+        build_stage1_criteria_prompt(
+            original_text=str(row["original_text"]),
+            mirror_text=str(row["mirror_text"]),
+        )
+        for _, row in batch_df.iterrows()
+    ]
+    results = service.structured_batch_completion(
+        prompts=prompts,
+        response_model=Stage1CriteriaLabel,
+        model=model,
+    )
+    if len(results) != len(batch_df):
+        raise ValueError(
+            f"Batch {batch_idx} returned {len(results)} results for {len(batch_df)} inputs."
+        )
+    label_rows = []
+    label_ids = []
+    for row, label in zip(batch_df.itertuples(index=False), results, strict=True):
+        label_id = str(getattr(row, "label_id"))
+        label_ids.append(label_id)
+        label_rows.append(
+            {
+                "label_id": label_id,
+                "model": model,
+                "political_us": int(label.political_us),
+                "opinion_not_news": int(label.opinion_not_news),
+                "complete": int(label.complete),
+                "self_contained": int(label.self_contained),
+                "target_topic": int(label.target_topic),
+                "clear_political_stance": int(label.clear_political_stance),
+            }
+        )
+    labels_out = pd.DataFrame(label_rows).loc[:, LABEL_COLUMNS]
+    return labels_out, label_ids
+
+
 def label_with_llm(
     *,
     input_csv: Path | str,
@@ -168,91 +254,34 @@ def label_with_llm(
         if synced:
             print(f"Synced {synced} label_id values into {success_path} from {labels_dir_path}")
 
-    completed_ids = load_success_ids(success_path) | load_labeled_ids_from_labels_dir(
-        labels_dir_path
-    )
-    pending = df.loc[~df["label_id"].astype(str).isin(completed_ids), :].reset_index(drop=True)
-
+    pending = _compute_pending_rows(df, success_path, labels_dir_path)
     if pending.empty:
         print("No pending rows to label.")
         return LabelingRunStats(processed=0, succeeded=0, remaining=0)
 
-    if batch_size <= 0:
-        raise ValueError("batch_size must be > 0")
-
     service = llm_service or get_llm_service()
-
     labels_dir_path.mkdir(parents=True, exist_ok=True)
-    if output_csv is None:
-        dt = run_timestamp or datetime.now(tz=timezone.utc)
-        output_path = labels_dir_path / f"{timestamp_for_filename(dt)}.csv"
-    else:
-        output_path = Path(output_csv)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path = _resolve_output_path(
+        labels_dir_path=labels_dir_path,
+        output_csv=output_csv,
+        run_timestamp=run_timestamp,
+    )
+    batches = _build_batches(pending, batch_size, max_batches)
 
     processed = 0
     succeeded = 0
-
-    batches = [
-        pending.iloc[i : i + batch_size, :].reset_index(drop=True)
-        for i in range(0, len(pending), batch_size)
-    ]
-    if max_batches is not None:
-        if max_batches <= 0:
-            raise ValueError("max_batches must be > 0 when provided")
-        batches = batches[:max_batches]
-
     for batch_idx, batch_df in enumerate(batches, start=1):
-        prompts = [
-            build_stage1_criteria_prompt(
-                original_text=str(row["original_text"]),
-                mirror_text=str(row["mirror_text"]),
-            )
-            for _, row in batch_df.iterrows()
-        ]
-
         try:
-            results = service.structured_batch_completion(
-                prompts=prompts,
-                response_model=Stage1CriteriaLabel,
-                model=model,
-            )
+            labels_out, label_ids = _process_batch(batch_df, service, model, batch_idx=batch_idx)
         except Exception as e:
             print(f"Batch {batch_idx} failed; stopping cleanly. Error: {e}")
             raise
 
-        if len(results) != len(batch_df):
-            raise ValueError(
-                f"Batch {batch_idx} returned {len(results)} results for {len(batch_df)} inputs."
-            )
-
-        label_rows = []
-        label_ids = []
-        for row, label in zip(batch_df.itertuples(index=False), results, strict=True):
-            label_id = str(getattr(row, "label_id"))
-            label_ids.append(label_id)
-            label_rows.append(
-                {
-                    "label_id": label_id,
-                    "model": model,
-                    "political_us": int(label.political_us),
-                    "opinion_not_news": int(label.opinion_not_news),
-                    "complete": int(label.complete),
-                    "self_contained": int(label.self_contained),
-                    "target_topic": int(label.target_topic),
-                    "clear_political_stance": int(label.clear_political_stance),
-                }
-            )
-
-        labels_out = pd.DataFrame(label_rows).loc[:, LABEL_COLUMNS]
-
-        # Write labels durably first.
         _append_dataframe(output_path, labels_out)
         newly_appended = append_success_ids(success_path, label_ids)
 
         processed += len(batch_df)
         succeeded += len(labels_out)
-
         remaining = int(len(pending) - processed)
         print(
             f"Batch {batch_idx}: processed={processed} succeeded={succeeded} "
@@ -274,4 +303,3 @@ if __name__ == "__main__":
         model=DEFAULT_MODEL,
         resume=True,
     )
-

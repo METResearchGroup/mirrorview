@@ -21,7 +21,9 @@ class FeedbackService:
         self._thumbs = thumbs
         self._edits = edits
 
-    async def submit_thumb(self, *, req: ThumbFeedbackRequest, generation_id: uuid.UUID | None = None) -> None:
+    async def submit_thumb(
+        self, *, req: ThumbFeedbackRequest, generation_id: uuid.UUID | None = None
+    ) -> None:
         async with self._uow.transaction():
             await self._submissions.upsert(req.submission)
             await self._thumbs.add(
@@ -31,7 +33,9 @@ class FeedbackService:
                 voted_at=req.voted_at,
             )
 
-    async def submit_edit(self, *, req: EditFeedbackRequest, generation_id: uuid.UUID | None = None) -> None:
+    async def submit_edit(
+        self, *, req: EditFeedbackRequest, generation_id: uuid.UUID | None = None
+    ) -> None:
         async with self._uow.transaction():
             await self._submissions.upsert(req.submission)
             await self._edits.add(
@@ -40,4 +44,3 @@ class FeedbackService:
                 edited_text=req.edited_text,
                 edited_at=req.edited_at,
             )
-

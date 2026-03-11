@@ -2,9 +2,15 @@
 
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return cast(dict[str, Any], value)
+    return {}
 
 
 class ModelConfig:
@@ -44,9 +50,10 @@ class ModelConfig:
             ) from e
 
         # Get model-specific config if it exists
-        provider_config = config_data.get("models", {}).get(self.provider_name, {})
-        supported_models = provider_config.get("supported_models", {})
-        self._model_config = supported_models.get(model_identifier, {})
+        models = _as_dict(config_data.get("models"))
+        provider_config = _as_dict(models.get(self.provider_name))
+        supported_models = _as_dict(provider_config.get("supported_models"))
+        self._model_config = _as_dict(supported_models.get(model_identifier))
 
     def get_litellm_route(self) -> str:
         """Get the provider-runtime model route for this public model identifier."""
@@ -82,20 +89,22 @@ class ModelConfig:
             The resolved kwarg value, or default if not found
         """
         # 1. Check model-specific llm_inference_kwargs
-        model_kwargs = self._model_config.get("llm_inference_kwargs", {})
-        if isinstance(model_kwargs, dict) and key in model_kwargs:
+        model_kwargs = _as_dict(self._model_config.get("llm_inference_kwargs"))
+        if key in model_kwargs:
             return model_kwargs[key]
 
         # 2. Check provider-specific llm_inference_kwargs
-        provider_config = self._config_data.get("models", {}).get(self.provider_name, {})
-        provider_kwargs = provider_config.get("llm_inference_kwargs", {})
-        if isinstance(provider_kwargs, dict) and key in provider_kwargs:
+        provider_config = _as_dict(
+            _as_dict(self._config_data.get("models")).get(self.provider_name)
+        )
+        provider_kwargs = _as_dict(provider_config.get("llm_inference_kwargs"))
+        if key in provider_kwargs:
             return provider_kwargs[key]
 
         # 3. Check default llm_inference_kwargs
-        default_config = self._config_data.get("models", {}).get("default", {})
-        default_kwargs = default_config.get("llm_inference_kwargs", {})
-        if isinstance(default_kwargs, dict) and key in default_kwargs:
+        default_config = _as_dict(_as_dict(self._config_data.get("models")).get("default"))
+        default_kwargs = _as_dict(default_config.get("llm_inference_kwargs"))
+        if key in default_kwargs:
             return default_kwargs[key]
 
         # Not found at any level
@@ -142,19 +151,19 @@ class ModelConfig:
             Dictionary of all resolved llm_inference_kwargs
         """
         # Start with default
-        default_config = self._config_data.get("models", {}).get("default", {})
-        merged_kwargs = default_config.get("llm_inference_kwargs", {}).copy()
+        default_config = _as_dict(_as_dict(self._config_data.get("models")).get("default"))
+        merged_kwargs = _as_dict(default_config.get("llm_inference_kwargs")).copy()
 
         # Override with provider defaults
-        provider_config = self._config_data.get("models", {}).get(self.provider_name, {})
-        provider_kwargs = provider_config.get("llm_inference_kwargs", {})
-        if isinstance(provider_kwargs, dict):
-            merged_kwargs.update(provider_kwargs)
+        provider_config = _as_dict(
+            _as_dict(self._config_data.get("models")).get(self.provider_name)
+        )
+        provider_kwargs = _as_dict(provider_config.get("llm_inference_kwargs"))
+        merged_kwargs.update(provider_kwargs)
 
         # Override with model-specific (highest precedence)
-        model_kwargs = self._model_config.get("llm_inference_kwargs", {})
-        if isinstance(model_kwargs, dict):
-            merged_kwargs.update(model_kwargs)
+        model_kwargs = _as_dict(self._model_config.get("llm_inference_kwargs"))
+        merged_kwargs.update(model_kwargs)
 
         return merged_kwargs
 
@@ -187,21 +196,19 @@ class ModelConfigRegistry:
             if not config_path.exists():
                 raise FileNotFoundError(f"Model configuration file not found: {config_path}")
             with open(config_path, "r") as f:
-                cls._config = yaml.safe_load(f)
+                cls._config = _as_dict(yaml.safe_load(f))
             cls._config_path = config_path  # Save resolved path
-            return cls._config or {}
+            return cls._config
 
     @classmethod
     def _configured_model_ids(cls) -> set[str]:
         """Return all model identifiers defined in the YAML configuration."""
         config = cls._load_config()
         configured_ids: set[str] = set()
-        for provider_config in config.get("models", {}).values():
-            if not isinstance(provider_config, dict):
-                continue
-            supported_models = provider_config.get("supported_models", {})
-            if isinstance(supported_models, dict):
-                configured_ids.update(supported_models.keys())
+        models = _as_dict(config.get("models"))
+        for provider_config in models.values():
+            supported_models = _as_dict(_as_dict(provider_config).get("supported_models"))
+            configured_ids.update(supported_models.keys())
         return configured_ids
 
     @classmethod
@@ -261,7 +268,7 @@ class ModelConfigRegistry:
     def list_providers(cls) -> list[str]:
         """List all configured provider names (excluding 'default')."""
         config = cls._load_config()
-        providers = list(config.get("models", {}).keys())
+        providers = list(_as_dict(config.get("models")).keys())
         # Remove 'default' from the list
         return [p for p in providers if p != "default"]
 
@@ -276,8 +283,8 @@ class ModelConfigRegistry:
             List of model identifiers supported by this provider
         """
         config = cls._load_config()
-        provider_config = config.get("models", {}).get(provider_name, {})
-        supported_models = provider_config.get("supported_models", {})
+        provider_config = _as_dict(_as_dict(config.get("models")).get(provider_name))
+        supported_models = _as_dict(provider_config.get("supported_models"))
         return list(supported_models.keys())
 
     @classmethod
@@ -287,7 +294,7 @@ class ModelConfigRegistry:
         Returns:
             List of all model identifiers in the configuration
         """
-        all_models = []
+        all_models: list[str] = []
         for provider_name in cls.list_providers():
             all_models.extend(cls.list_models_for_provider(provider_name))
         return all_models
@@ -327,11 +334,10 @@ class ModelConfigRegistry:
             ValueError: If the configured default_model does not exist or is unavailable
         """
         config = cls._load_config()
-        default_config = config.get("models", {}).get("default", {})
+        default_config = _as_dict(_as_dict(config.get("models")).get("default"))
         default_model = default_config.get("default_model")
-        if default_model is None:
+        if not isinstance(default_model, str) or not default_model.strip():
             raise KeyError("default_model not found in models.default configuration")
         if not cls.is_model_available(default_model):
             raise ValueError(f"default_model '{default_model}' must exist and be available")
         return default_model
-
