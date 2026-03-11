@@ -12,37 +12,44 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 
-def test_step1_dedupe_and_reshape_to_five_mirrors_per_post() -> None:
-    from experiments.label_criteria_for_reward_model_2026_03_10.step1_build_labeling_dataset import (
-        MIRROR_ID_TO_COLUMN,
-        build_unique_mirrors_to_label,
-        make_label_id,
-    )
+"""Pytest coverage for the label criteria reward model pipeline."""
 
-    base_row = {
-        "trial_index": 1,
-        "post_id": "post_1",
-        "post_primary_key": "post_1",
-        "original_text": "Original text",
-        "sampled_stance": "left",
-        "sample_toxicity_type": "sample_low_toxicity",
-        "human_mirror": "H",
-        "llama_mirror": "L",
-        "qwen_mirror": "Q",
-        "claude_mirror": "C",
-        "gpt4o_mirror": "G",
-    }
-    # Duplicate participant-level rows for the same post_id with identical mirror text.
-    joined = pd.DataFrame([base_row, {**base_row, "trial_index": 2}])
 
-    out = build_unique_mirrors_to_label(joined)
-    assert len(out) == 5
-    assert out["post_id"].nunique() == 1
-    assert set(out["mirror_id"].tolist()) == set(MIRROR_ID_TO_COLUMN.keys())
-    assert out["label_id"].nunique() == 5
+class TestLabelCriteriaForRewardModel:
+    """Encapsulates expectations for label criteria deduplication and reshaping."""
 
-    expected_ids = {make_label_id(post_id="post_1", mirror_id=m) for m in MIRROR_ID_TO_COLUMN}
-    assert set(out["label_id"].tolist()) == expected_ids
+    def test_step1_dedupe_and_reshape_to_five_mirrors_per_post(self) -> None:
+        """Ensures step one produces each mirror once per post."""
+        from experiments.label_criteria_for_reward_model_2026_03_10.step1_build_labeling_dataset import (
+            MIRROR_ID_TO_COLUMN,
+            build_unique_mirrors_to_label,
+            make_label_id,
+        )
+
+        base_row = {
+            "trial_index": 1,
+            "post_id": "post_1",
+            "post_primary_key": "post_1",
+            "original_text": "Original text",
+            "sampled_stance": "left",
+            "sample_toxicity_type": "sample_low_toxicity",
+            "human_mirror": "H",
+            "llama_mirror": "L",
+            "qwen_mirror": "Q",
+            "claude_mirror": "C",
+            "gpt4o_mirror": "G",
+        }
+        # Duplicate participant-level rows for the same post_id with identical mirror text.
+        joined = pd.DataFrame([base_row, {**base_row, "trial_index": 2}])
+
+        out = build_unique_mirrors_to_label(joined)
+        assert len(out) == 5
+        assert out["post_id"].nunique() == 1
+        assert set(out["mirror_id"].tolist()) == set(MIRROR_ID_TO_COLUMN.keys())
+        assert out["label_id"].nunique() == 5
+
+        expected_ids = {make_label_id(post_id="post_1", mirror_id=m) for m in MIRROR_ID_TO_COLUMN}
+        assert set(out["label_id"].tolist()) == expected_ids
 
 
 def test_step2_skip_resume_appends_without_duplicates(tmp_path: Path) -> None:

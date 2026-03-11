@@ -1,28 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-BACKEND_DIR = REPO_ROOT / "backend"
-for p in (str(BACKEND_DIR), str(REPO_ROOT)):
-    if p not in sys.path:
-        # Keep the script directory (sys.path[0]) first so local modules like
-        # prompts.py/schemas.py resolve to this experiment, not backend/.
-        insert_at = 1 if len(sys.path) > 0 else 0
-        sys.path.insert(insert_at, p)
-
-try:
-    # When imported as a package module (pytest).
-    from .step1_build_labeling_dataset import DEFAULT_JOINED_INPUT, step1_build_labeling_dataset
-    from .step2_label_with_llm import DEFAULT_MODEL, label_with_llm
-    from .step3_finalize_labels import finalize_labels
-except ImportError:  # pragma: no cover
-    # When executed as a script.
-    from step1_build_labeling_dataset import DEFAULT_JOINED_INPUT, step1_build_labeling_dataset
-    from step2_label_with_llm import DEFAULT_MODEL, label_with_llm
-    from step3_finalize_labels import finalize_labels
+from .step1_build_labeling_dataset import (
+    DEFAULT_JOINED_INPUT,
+    step1_build_labeling_dataset,
+)
+from .step2_label_with_llm import DEFAULT_MODEL, label_with_llm
+from .step3_finalize_labels import finalize_labels
 
 
 EXPERIMENT_DIR = Path(__file__).resolve().parent
