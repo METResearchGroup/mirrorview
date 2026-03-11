@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,7 @@ class TrainingConfig:
     seed: int = 42
     eval_batch_size: int | None = None
     threshold: float = 0.5
+    max_samples: int | None = None
 
 
 class DebertaRewardModel(nn.Module):
@@ -45,7 +47,7 @@ class DebertaRewardModel(nn.Module):
         labels: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor | None]:
         outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
-        pooled = outputs.last_hidden_state[:, 0]
+        pooled = outputs.last_hidden_state[:, 0].to(self.classifier.weight.dtype)
         logits = self.classifier(self.dropout(pooled))
         loss = self.loss_fn(logits, labels) if labels is not None else None
         return {"loss": loss, "logits": logits}
@@ -58,57 +60,23 @@ def _set_seed(seed: int) -> None:
 
 
 def _get_device() -> torch.device:
-    if torch.backends.mps.is_available():
+    use_mps = os.getenv("MV_USE_MPS", "0").strip().lower() in {"1", "true", "yes", "y"}
+    if use_mps and torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
 
 
-def train_one_epoch(
-    *,
-    model: nn.Module,
-    dataloader: torch.utils.data.DataLoader,
-    optimizer: torch.optim.Optimizer,
-    device: torch.device,
-) -> float:
-    model.train()
-    total_loss = 0.0
-    total_steps = 0
-    for batch in dataloader:
-        optimizer.zero_grad(set_to_none=True)
-        input_ids = batch["input_ids"].to(device)
-        attention_mask = batch["attention_mask"].to(device)
-        labels = batch["labels"].to(device)
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        loss = outputs["loss"]
-        if loss is None:
-            continue
-        loss.backward()
-        optimizer.step()
-        total_loss += float(loss.item())
-        total_steps += 1
-    return total_loss / total_steps if total_steps else 0.0
-
-
-def train_once(
+def _train_on_device(
     *,
     config: TrainingConfig,
+    data: DatasetSplit,
+    device: torch.device,
     run_dir: Path,
-    telemetry: Any | None = None,
+    telemetry: Any | None,
 ) -> dict[str, Any]:
-    _set_seed(config.seed)
-    device = _get_device()
-
-    data: DatasetSplit = create_dataloaders(
-        csv_path=config.dataset_csv,
-        tokenizer_name=config.model_name,
-        batch_size=config.batch_size,
-        max_length=config.max_length,
-        seed=config.seed,
-        eval_batch_size=config.eval_batch_size,
-    )
-
     model = DebertaRewardModel(config.model_name, num_labels=len(TARGET_COLUMNS))
     model.to(device)
+    model.float()
 
     optimizer = AdamW(
         model.parameters(),
@@ -167,3 +135,69 @@ def train_once(
         "total_epochs": config.epochs,
         "run_dir": str(run_dir),
     }
+
+
+def train_one_epoch(
+    *,
+    model: nn.Module,
+    dataloader: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+) -> float:
+    model.train()
+    total_loss = 0.0
+    total_steps = 0
+    for batch in dataloader:
+        optimizer.zero_grad(set_to_none=True)
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["labels"].to(device)
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        loss = outputs["loss"]
+        if loss is None:
+            continue
+        loss.backward()
+        optimizer.step()
+        total_loss += float(loss.item())
+        total_steps += 1
+    return total_loss / total_steps if total_steps else 0.0
+
+
+def train_once(
+    *,
+    config: TrainingConfig,
+    run_dir: Path,
+    telemetry: Any | None = None,
+) -> dict[str, Any]:
+    _set_seed(config.seed)
+    preferred_device = _get_device()
+
+    data: DatasetSplit = create_dataloaders(
+        csv_path=config.dataset_csv,
+        tokenizer_name=config.model_name,
+        batch_size=config.batch_size,
+        max_length=config.max_length,
+        seed=config.seed,
+        eval_batch_size=config.eval_batch_size,
+        max_samples=config.max_samples,
+    )
+
+    try:
+        return _train_on_device(
+            config=config,
+            data=data,
+            device=preferred_device,
+            run_dir=run_dir,
+            telemetry=telemetry,
+        )
+    except RuntimeError as exc:
+        if preferred_device.type == "mps" and "MPSNDArrayMatrixMultiplication" in str(exc):
+            cpu_dir = run_dir / "cpu_fallback"
+            return _train_on_device(
+                config=config,
+                data=data,
+                device=torch.device("cpu"),
+                run_dir=cpu_dir,
+                telemetry=telemetry,
+            )
+        raise

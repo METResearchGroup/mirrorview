@@ -74,12 +74,15 @@ def create_dataloaders(
     max_length: int,
     seed: int = 42,
     eval_batch_size: int | None = None,
+    max_samples: int | None = None,
 ) -> DatasetSplit:
     path = Path(csv_path)
     df = pd.read_csv(path)
     _validate_columns(df)
 
     df = df.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    if max_samples is not None:
+        df = df.head(max_samples).reset_index(drop=True)
     split_idx = int(len(df) * 0.8)
     train_df = df.iloc[:split_idx].reset_index(drop=True)
     eval_df = df.iloc[split_idx:].reset_index(drop=True)

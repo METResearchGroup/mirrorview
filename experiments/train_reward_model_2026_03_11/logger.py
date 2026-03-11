@@ -12,7 +12,7 @@ class LogExperiment:
 
     def write_hyperparameters(self, config: dict[str, Any]) -> Path:
         path = self.run_dir / "hyperparameters.json"
-        path.write_text(json.dumps(config, indent=2, sort_keys=True))
+        path.write_text(json.dumps(config, indent=2, sort_keys=True, default=str))
         return path
 
     def write_results(
@@ -28,7 +28,7 @@ class LogExperiment:
             "total_runtime_seconds": runtime_seconds,
         }
         path = self.run_dir / "run_results.json"
-        path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str))
         return path
 
     def append_epoch_metrics(self, metrics: dict[str, Any]) -> Path:

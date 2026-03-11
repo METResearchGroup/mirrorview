@@ -9,54 +9,21 @@ from pathlib import Path
 from typing import Any
 
 import sys
-from types import ModuleType
-
-from .train import TrainingConfig, train_once
-
 
 EXPERIMENT_DIR = Path(__file__).resolve().parent
-CONSTANTS_PATH = EXPERIMENT_DIR.parents[1] / "backend" / "lib" / "constants.py"
+REPO_ROOT = EXPERIMENT_DIR.parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+BACKEND_DIR = REPO_ROOT / "backend"
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
-
-def _load_module(name: str, path: Path):
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Unable to load module {name} from {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def _load_root_dir() -> Path:
-    module = _load_module("backend.lib.constants", CONSTANTS_PATH)
-    return module.ROOT_DIR
-
-
-def _ensure_backend_package(root_dir: Path) -> None:
-    if "backend" not in sys.modules:
-        backend_pkg = ModuleType("backend")
-        backend_pkg.__path__ = [str(root_dir / "backend")]
-        sys.modules["backend"] = backend_pkg
-    if "backend.ml_tooling" not in sys.modules:
-        tooling_pkg = ModuleType("backend.ml_tooling")
-        tooling_pkg.__path__ = [str(root_dir / "backend" / "ml_tooling")]
-        sys.modules["backend.ml_tooling"] = tooling_pkg
-
-
-ROOT_DIR = _load_root_dir()
-_ensure_backend_package(ROOT_DIR)
-_optuna_module = _load_module(
-    "backend.ml_tooling.optuna", ROOT_DIR / "backend" / "ml_tooling" / "optuna.py"
-)
-_wandb_module = _load_module(
-    "backend.ml_tooling.wandb", ROOT_DIR / "backend" / "ml_tooling" / "wandb.py"
-)
-OptunaOptimizer = _optuna_module.OptunaOptimizer
-WandbTelemetry = _wandb_module.WandbTelemetry
+from backend.lib.constants import ROOT_DIR as BACKEND_ROOT
+from backend.ml_tooling.optuna import OptunaOptimizer
+from backend.ml_tooling.wandb import WandbTelemetry
+from experiments.train_reward_model_2026_03_11.train import TrainingConfig, train_once
 DEFAULT_DATASET = (
-    ROOT_DIR
+    BACKEND_ROOT
     / "experiments"
     / "label_criteria_for_reward_model_2026_03_10"
     / "artifacts"
@@ -89,7 +56,9 @@ def _run_id(prefix: str) -> str:
 
 def _write_best_run(best: dict[str, Any]) -> None:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    (RUNS_DIR / "best_run.json").write_text(json.dumps(best, indent=2, sort_keys=True))
+    (RUNS_DIR / "best_run.json").write_text(
+        json.dumps(best, indent=2, sort_keys=True, default=str)
+    )
 
 
 def _grid_search(args: argparse.Namespace) -> dict[str, Any]:
@@ -106,6 +75,9 @@ def _grid_search(args: argparse.Namespace) -> dict[str, Any]:
         epoch_grid = [1]
         length_grid = [args.max_length]
         weight_decay_grid = [args.weight_decay]
+        max_samples = 128
+    else:
+        max_samples = None
 
     best_run: dict[str, Any] | None = None
 
@@ -120,6 +92,7 @@ def _grid_search(args: argparse.Namespace) -> dict[str, Any]:
             learning_rate=lr,
             max_length=max_length,
             weight_decay=wd,
+            max_samples=max_samples,
         )
         run_dir = RUNS_DIR / _run_id("grid")
         telemetry = WandbTelemetry(
@@ -143,6 +116,7 @@ def _optuna_search(args: argparse.Namespace) -> dict[str, Any]:
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
     def objective(hparams: dict[str, Any]) -> float:
+        max_samples = 128 if args.smoke_test else None
         config = TrainingConfig(
             dataset_csv=args.dataset_csv,
             model_name=args.model_name,
@@ -151,6 +125,7 @@ def _optuna_search(args: argparse.Namespace) -> dict[str, Any]:
             learning_rate=hparams["learning_rate"],
             max_length=hparams["max_length"],
             weight_decay=hparams["weight_decay"],
+            max_samples=max_samples,
         )
         run_dir = RUNS_DIR / _run_id("optuna")
         telemetry = WandbTelemetry(
