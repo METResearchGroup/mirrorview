@@ -1,21 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 from ml_tooling.llm.llm_service import LLMService, get_llm_service
 
-try:
-    # When imported as a package module (pytest).
-    from .prompts import build_stage1_criteria_prompt
-    from .schemas import Stage1CriteriaLabel
-except ImportError:  # pragma: no cover
-    # When executed as a script (python path rooted at this directory).
-    from prompts import build_stage1_criteria_prompt
-    from schemas import Stage1CriteriaLabel
+from .prompts import build_stage1_criteria_prompt
+from .schemas import Stage1CriteriaLabel
 
 
 DEFAULT_MODEL = "gpt-5-nano"
@@ -51,7 +45,10 @@ def _read_csv_if_exists(path: Path) -> pd.DataFrame | None:
 
 
 def timestamp_for_filename(dt: datetime) -> str:
-    return dt.strftime("%Y_%m_%d-%H:%M:%S")
+    aware_dt = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    if aware_dt.tzinfo is not timezone.utc:
+        aware_dt = aware_dt.astimezone(timezone.utc)
+    return aware_dt.strftime("%Y_%m_%d-%H:%M:%S")
 
 
 def list_label_csvs(labels_dir: Path) -> list[Path]:
@@ -60,22 +57,21 @@ def list_label_csvs(labels_dir: Path) -> list[Path]:
     return sorted([p for p in labels_dir.iterdir() if p.is_file() and p.suffix == ".csv"])
 
 
-def load_success_ids(path: Path) -> set[str]:
+def load_label_ids(path: Path) -> set[str]:
     df = _read_csv_if_exists(path)
     if df is None or df.empty:
         return set()
     if "label_id" not in df.columns:
         raise ValueError(f"Expected column `label_id` in {path}")
     return set(df["label_id"].dropna().astype(str).tolist())
+
+
+def load_success_ids(path: Path) -> set[str]:
+    return load_label_ids(path)
 
 
 def load_labeled_ids_from_labels_csv(path: Path) -> set[str]:
-    df = _read_csv_if_exists(path)
-    if df is None or df.empty:
-        return set()
-    if "label_id" not in df.columns:
-        raise ValueError(f"Expected column `label_id` in {path}")
-    return set(df["label_id"].dropna().astype(str).tolist())
+    return load_label_ids(path)
 
 
 def load_labeled_ids_from_labels_dir(labels_dir: Path) -> set[str]:
@@ -188,7 +184,7 @@ def label_with_llm(
 
     labels_dir_path.mkdir(parents=True, exist_ok=True)
     if output_csv is None:
-        dt = run_timestamp or datetime.now()
+        dt = run_timestamp or datetime.now(tz=timezone.utc)
         output_path = labels_dir_path / f"{timestamp_for_filename(dt)}.csv"
     else:
         output_path = Path(output_csv)
