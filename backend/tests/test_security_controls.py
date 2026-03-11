@@ -1,6 +1,8 @@
 import importlib
 from uuid import uuid4
 
+from tests.helpers import install_fake_llm
+
 
 def _reload_app(monkeypatch, **env: str):
     for key, value in env.items():
@@ -27,37 +29,13 @@ def _payload(text: str) -> dict:
     }
 
 
-def _install_fake_llm(main):
-    class _FakeLLM:
-        def structured_completion(self, messages, response_model, model=None):
-            return response_model(flipped_text="ok", explanation="ok")
-
-    import app.di.providers as providers
-
-    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
-    _override_llm_dependency(main.app, _FakeLLM)
-
-
-def _override_llm_dependency(app, fake_llm_cls) -> None:
-    def _walk(dependant):
-        for dep in dependant.dependencies:
-            if getattr(dep.call, "__name__", "") == "get_llm_client":
-                app.dependency_overrides[dep.call] = lambda: fake_llm_cls()
-            _walk(dep)
-
-    for route in app.routes:
-        dependant = getattr(route, "dependant", None)
-        if dependant is not None:
-            _walk(dependant)
-
-
 def test_generate_endpoint_rate_limited(monkeypatch):
     main = _reload_app(
         monkeypatch,
         CORS_ORIGINS="http://localhost:3000",
         RATE_LIMIT_GENERATE="1/minute",
     )
-    _install_fake_llm(main)
+    install_fake_llm(main)
 
     from fastapi.testclient import TestClient
 
@@ -79,7 +57,7 @@ def test_payload_too_large_rejected(monkeypatch):
         CORS_ORIGINS="http://localhost:3000",
         MAX_REQUEST_BODY_BYTES="150",
     )
-    _install_fake_llm(main)
+    install_fake_llm(main)
 
     from fastapi.testclient import TestClient
 

@@ -13,6 +13,7 @@ from testcontainers.postgres import PostgresContainer
 from docker.errors import DockerException
 
 from lib.load_env_vars import settings
+from tests.helpers import install_fake_llm
 
 
 def _run_migrations(database_url: str) -> None:
@@ -21,30 +22,6 @@ def _run_migrations(database_url: str) -> None:
     cfg = Config(str(alembic_ini))
     # env.py reads DATABASE_URL from env; set it for the upgrade.
     command.upgrade(cfg, "head")
-
-
-def _install_fake_llm(main) -> None:
-    class _FakeLLM:
-        def structured_completion(self, messages, response_model, model=None):
-            return response_model(flipped_text="hello (flipped)", explanation="because")
-
-    import app.di.providers as providers
-
-    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
-    _override_llm_dependency(main.app, _FakeLLM)
-
-
-def _override_llm_dependency(app, fake_llm_cls) -> None:
-    def _walk(dependant):
-        for dep in dependant.dependencies:
-            if getattr(dep.call, "__name__", "") == "get_llm_client":
-                app.dependency_overrides[dep.call] = lambda: fake_llm_cls()
-            _walk(dep)
-
-    for route in app.routes:
-        dependant = getattr(route, "dependant", None)
-        if dependant is not None:
-            _walk(dependant)
 
 
 async def _fetch_one(database_url: str, sql: str, params: dict | None = None):
@@ -93,7 +70,11 @@ class TestPersistenceIntegration:
                 importlib.reload(providers)
                 importlib.reload(main)
 
-                _install_fake_llm(main)
+                install_fake_llm(
+                    main,
+                    flipped_text="hello (flipped)",
+                    explanation="because",
+                )
 
                 submission_id = str(uuid.uuid4())
                 payload = {
@@ -185,7 +166,11 @@ class TestPersistenceIntegration:
                 importlib.reload(providers)
                 importlib.reload(main)
 
-                _install_fake_llm(main)
+                install_fake_llm(
+                    main,
+                    flipped_text="hello (flipped)",
+                    explanation="because",
+                )
 
                 submission_id = str(uuid.uuid4())
                 payload = {
