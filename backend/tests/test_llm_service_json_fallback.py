@@ -27,9 +27,7 @@ class TestLLMServiceJsonFallback:
             # Must use the configured route for the model.
             assert kwargs_dict["model"] == "openrouter/anthropic/claude-haiku-4.5"
             # Return content containing extra prose + JSON to test extraction.
-            content = (
-                'Here you go:\\n{"flipped_text":"hello (flipped)","explanation":"because"}\\nThanks!'
-            )
+            content = 'Here you go:\\n{"flipped_text":"hello (flipped)","explanation":"because"}\\nThanks!'
             return ModelResponse(choices=[{"message": {"content": content}}])
 
         import ml_tooling.llm.llm_service as llm_service_mod
@@ -38,7 +36,10 @@ class TestLLMServiceJsonFallback:
 
         svc = LLMService()
         result = svc.structured_completion(
-            messages=[{"role": "system", "content": "flip it"}, {"role": "user", "content": "hello"}],
+            messages=[
+                {"role": "system", "content": "flip it"},
+                {"role": "user", "content": "hello"},
+            ],
             response_model=FlipResponse,
             model="claude-4.5-haiku",
         )

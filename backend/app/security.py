@@ -268,9 +268,7 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = get_request_id(request)
-    logger.exception(
-        "Unhandled exception request_id=%s path=%s", request_id, request.url.path
-    )
+    logger.exception("Unhandled exception request_id=%s path=%s", request_id, request.url.path)
     return error_response(
         status_code=500,
         code="internal_error",

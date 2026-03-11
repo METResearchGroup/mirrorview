@@ -53,7 +53,9 @@ class TestStep2LabelWithLlm:
     """Tests for step2_label_with_llm resume and deduplication behavior."""
 
     def test_step2_skip_resume_appends_without_duplicates(self, tmp_path: Path) -> None:
-        from experiments.label_criteria_for_reward_model_2026_03_10.schemas import Stage1CriteriaLabel
+        from experiments.label_criteria_for_reward_model_2026_03_10.schemas import (
+            Stage1CriteriaLabel,
+        )
         from experiments.label_criteria_for_reward_model_2026_03_10.step2_label_with_llm import (
             label_with_llm,
         )

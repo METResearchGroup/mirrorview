@@ -120,7 +120,9 @@ class TestGenerateResponse:
         assert res.status_code in (200, 204)
         assert res.headers.get("access-control-allow-origin") == "https://example.com"
 
-    def test_models_endpoint_returns_default_and_options(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_models_endpoint_returns_default_and_options(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
         from fastapi.testclient import TestClient
@@ -135,7 +137,9 @@ class TestGenerateResponse:
         assert "openai-gpt-4o-mini" in model_ids
         assert "gpt-4" not in model_ids
 
-    def test_generate_response_rejects_unknown_model_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_generate_response_rejects_unknown_model_id(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
         from fastapi.testclient import TestClient
@@ -158,7 +162,9 @@ class TestGenerateResponse:
         assert "Model is not available" in res.json()["error"]["message"]
         assert "does-not-exist" in res.json()["error"]["message"]
 
-    def test_generate_response_rejects_unavailable_model_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_generate_response_rejects_unavailable_model_id(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
         from fastapi.testclient import TestClient
