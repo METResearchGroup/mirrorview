@@ -57,8 +57,11 @@ jobs:
 
       - name: Run complexipy on changed files
         if: steps.changed.outputs.any_changed == 'true'
+        shell: bash
         run: |
           changed="${{ steps.changed.outputs.all_changed_files }}"
+          # tj-actions/changed-files outputs literal \n; interpret escapes for splitting
+          changed=$(printf '%b' "$changed")
           if [ -n "$changed" ]; then
             mapfile -t files <<< "$changed"
             uv run complexipy "${files[@]}" --max-complexity-allowed 999
