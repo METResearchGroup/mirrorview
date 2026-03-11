@@ -24,7 +24,7 @@ todos:
     content: Update `flip-prototype/app/page.tsx` to fetch 3 suggestions on mount and render 4 buttons above textarea; clicking populates `inputText` and resets downstream state; sampler fetches `/examples/random` (excluding current suggestion ids).
     status: completed
   - id: verify-and-lint
-    content: Run `cd backend && uv run pytest` and `cd flip-prototype && npm run lint`; manually click through UI happy flow locally.
+    content: Run `PYTHONPATH=backend:. uv run pytest backend/tests` and `cd flip-prototype && npm run lint`; manually click through UI happy flow locally.
     status: completed
   - id: after-screenshots
     content: Capture updated UI screenshots (4-button strip present and working) and save to `docs/plans/2026-03-05_random_examples_buttons_483271/images/after/` (same happy flow as before).
@@ -115,10 +115,9 @@ We’ll add a small curated “examples” API to the FastAPI backend and a matc
   - Start backend (persistence disabled is fine):
 
 ```bash
-cd backend
 export RUN_MODE=local
 export PERSISTENCE_ENABLED=false
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+PYTHONPATH=backend:. uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 - Verify endpoints respond:
@@ -127,8 +126,7 @@ uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - Run backend tests:
 
 ```bash
-cd backend
-uv run pytest
+PYTHONPATH=backend:. uv run pytest backend/tests
 ```
 
 - Expected: exit code 0; examples API tests pass.

@@ -123,17 +123,17 @@ We could derive the mirror-labeling input from `[step4_pairwise_preferences.csv]
 
 ## Manual Verification
 
-- Create the unique labeling input: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run python ../experiments/label_criteria_for_reward_model_2026_03_10/main.py --step build-input`
+- Create the unique labeling input: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run python -m experiments.label_criteria_for_reward_model_2026_03_10.main --step build-input`
 Expected result: `../experiments/label_criteria_for_reward_model_2026_03_10/artifacts/step1_unique_mirrors_to_label.csv` is written with 4,795 rows and one unique `label_id` per `post_id + mirror_id`.
-- Run the unit tests: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run pytest tests/test_label_criteria_for_reward_model_pipeline.py -q`
+- Run the unit tests: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run pytest backend/tests/test_label_criteria_for_reward_model_pipeline.py -q`
 Expected result: tests pass for dedupe, batching, skip/resume, and final derived-score logic.
-- Smoke-test the LLM labeling step with exactly one batch: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run python ../experiments/label_criteria_for_reward_model_2026_03_10/main.py --step label --batch-size 10 --max-batches 1 --model gpt-5-nano`
+- Smoke-test the LLM labeling step with exactly one batch: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run python -m experiments.label_criteria_for_reward_model_2026_03_10.main --step label --batch-size 10 --max-batches 1 --model gpt-5-nano`
 Expected result: exactly 10 rows are appended to `step2_llm_labels.csv`, exactly 10 ids are appended to `successfully_labeled_flips.csv`, and the process prints batch progress without schema errors.
 - Verify resume behavior by rerunning the same smoke test command.
 Expected result: the command skips the 10 already-labeled ids and either processes the next batch or reports that no pending rows remain within the requested `max_batches` window; it must not duplicate ids in `successfully_labeled_flips.csv`.
-- Run the full labeling job: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run python ../experiments/label_criteria_for_reward_model_2026_03_10/main.py --step label --batch-size 10 --model gpt-5-nano`
+- Run the full labeling job: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run python -m experiments.label_criteria_for_reward_model_2026_03_10.main --step label --batch-size 10 --model gpt-5-nano`
 Expected result: all pending mirrors are labeled across repeated batches until `successfully_labeled_flips.csv` reaches 4,795 unique ids.
-- Finalize the labeled dataset: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run python ../experiments/label_criteria_for_reward_model_2026_03_10/main.py --step finalize`
+- Finalize the labeled dataset: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run python -m experiments.label_criteria_for_reward_model_2026_03_10.main --step finalize`
 Expected result: `step3_all_mirror_criteria_labels.csv` contains exactly one row per `label_id` with the six binary fields, `criteria_sum`, and `passes_stage1_filter`.
 - Spot-check the final labels by opening `[/Users/mark/Documents/work/mirrorview-worktree/experiments/label_criteria_for_reward_model_2026_03_10/artifacts/step3_all_mirror_criteria_labels.csv](/Users/mark/Documents/work/mirrorview-worktree/experiments/label_criteria_for_reward_model_2026_03_10/artifacts/step3_all_mirror_criteria_labels.csv)`.
 Expected result: rows include the original post, mirror text, mirror id, all six criteria, and the derived pass/fail fields needed for Stage 2 filtering.

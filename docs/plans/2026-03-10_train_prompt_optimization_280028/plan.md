@@ -74,11 +74,11 @@ We will turn the pilot preference export in [`/Users/mark/Documents/work/mirrorv
 We could add `pandas` and express the pipeline as dataframe transforms, but the simpler first pass is stdlib CSV processing because the repo’s Python environment already exists under [`/Users/mark/Documents/work/mirrorview-worktree/backend/pyproject.toml`](/Users/mark/Documents/work/mirrorview-worktree/backend/pyproject.toml) without extra data-stack dependencies. We could also skip intermediate CSVs and only emit the final pairwise dataset, but keeping step artifacts makes debugging data quality issues much easier for this first experiment.
 
 ## Manual Verification
-- [ ] Sync the existing Python environment: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv sync`.
+- [ ] Sync the existing Python environment: `cd /Users/mark/Documents/work/mirrorview-worktree && uv sync`.
   Expected result: the backend virtual environment resolves successfully with no new dependency additions required for the experiment scripts.
-- [ ] Run the unit tests: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run pytest tests/test_prompt_optimization_pipeline.py -q`.
+- [ ] Run the unit tests: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run pytest backend/tests/test_prompt_optimization_pipeline.py -q`.
   Expected result: tests pass and verify the four requested transformations on small fixtures.
-- [ ] Run the DAG end-to-end: `cd /Users/mark/Documents/work/mirrorview-worktree/backend && uv run python ../experiments/2026_03_10_train_prompt_optimization/main.py`.
+- [ ] Run the DAG end-to-end: `cd /Users/mark/Documents/work/mirrorview-worktree && PYTHONPATH=backend:. uv run python -m experiments.2026_03_10_train_prompt_optimization.main`.
   Expected result: the script prints stage row counts and writes the four CSV artifacts under `../experiments/2026_03_10_train_prompt_optimization/artifacts/`.
 - [ ] Inspect the final artifact: open [`/Users/mark/Documents/work/mirrorview-worktree/experiments/2026_03_10_train_prompt_optimization/artifacts/step4_pairwise_preferences.csv`](/Users/mark/Documents/work/mirrorview-worktree/experiments/2026_03_10_train_prompt_optimization/artifacts/step4_pairwise_preferences.csv).
   Expected result: each row contains the original post text plus a winner/loser mirror pair, and each source trial contributes one row for every non-selected mirror.

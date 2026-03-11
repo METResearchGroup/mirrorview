@@ -6,8 +6,12 @@ def _reload_app(monkeypatch, **env: str):
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
+    import app.api.routers.generate as generate
+    import app.api.routers as routers
     import app.main as main
 
+    importlib.reload(generate)
+    importlib.reload(routers)
     importlib.reload(main)
     return main
 
@@ -31,6 +35,20 @@ def _install_fake_llm(main):
     import app.di.providers as providers
 
     main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+    _override_llm_dependency(main.app, _FakeLLM)
+
+
+def _override_llm_dependency(app, fake_llm_cls) -> None:
+    def _walk(dependant):
+        for dep in dependant.dependencies:
+            if getattr(dep.call, "__name__", "") == "get_llm_client":
+                app.dependency_overrides[dep.call] = lambda: fake_llm_cls()
+            _walk(dep)
+
+    for route in app.routes:
+        dependant = getattr(route, "dependant", None)
+        if dependant is not None:
+            _walk(dependant)
 
 
 def test_generate_endpoint_rate_limited(monkeypatch):

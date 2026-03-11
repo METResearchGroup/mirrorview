@@ -23,6 +23,30 @@ def _run_migrations(database_url: str) -> None:
     command.upgrade(cfg, "head")
 
 
+def _install_fake_llm(main) -> None:
+    class _FakeLLM:
+        def structured_completion(self, messages, response_model, model=None):
+            return response_model(flipped_text="hello (flipped)", explanation="because")
+
+    import app.di.providers as providers
+
+    main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+    _override_llm_dependency(main.app, _FakeLLM)
+
+
+def _override_llm_dependency(app, fake_llm_cls) -> None:
+    def _walk(dependant):
+        for dep in dependant.dependencies:
+            if getattr(dep.call, "__name__", "") == "get_llm_client":
+                app.dependency_overrides[dep.call] = lambda: fake_llm_cls()
+            _walk(dep)
+
+    for route in app.routes:
+        dependant = getattr(route, "dependant", None)
+        if dependant is not None:
+            _walk(dependant)
+
+
 async def _fetch_one(database_url: str, sql: str, params: dict | None = None):
     engine = create_async_engine(
         database_url,
@@ -60,16 +84,16 @@ class TestPersistenceIntegration:
                 _run_migrations(database_url)
 
                 import app.di.providers as providers
+                import app.api.routers.generate as generate
+                import app.api.routers as routers
                 import app.main as main
 
+                importlib.reload(generate)
+                importlib.reload(routers)
                 importlib.reload(providers)
                 importlib.reload(main)
 
-                class _FakeLLM:
-                    def structured_completion(self, messages, response_model, model=None):
-                        return response_model(flipped_text="hello (flipped)", explanation="because")
-
-                main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+                _install_fake_llm(main)
 
                 submission_id = str(uuid.uuid4())
                 payload = {
@@ -152,16 +176,16 @@ class TestPersistenceIntegration:
                 settings.cache_clear()
 
                 import app.di.providers as providers
+                import app.api.routers.generate as generate
+                import app.api.routers as routers
                 import app.main as main
 
+                importlib.reload(generate)
+                importlib.reload(routers)
                 importlib.reload(providers)
                 importlib.reload(main)
 
-                class _FakeLLM:
-                    def structured_completion(self, messages, response_model, model=None):
-                        return response_model(flipped_text="hello (flipped)", explanation="because")
-
-                main.app.dependency_overrides[providers.get_llm_client] = lambda: _FakeLLM()
+                _install_fake_llm(main)
 
                 submission_id = str(uuid.uuid4())
                 payload = {

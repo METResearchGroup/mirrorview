@@ -98,16 +98,16 @@ Create a small mixin module used only by OpenAI/Anthropic/OpenRouter:
 ## Manual Verification
 
 - **Unit tests**:
-  - `cd backend && uv run pytest`
+  - `PYTHONPATH=backend:. uv run pytest backend/tests`
   - Expected: exit code 0, tests including `backend/tests/test_generate_response.py::test_models_endpoint_returns_default_and_options` pass.
 - **Lint**:
-  - `cd backend && uv run ruff check .`
+  - `PYTHONPATH=backend:. uv run ruff check .`
   - Expected: “All checks passed!” (or no new violations).
 - **Import smoke tests** (fast failure for deleted providers):
-  - `cd backend && uv run python -c "from ml_tooling.llm.providers.registry import LLMProviderRegistry; print(sorted(LLMProviderRegistry.list_providers()))"`
+  - `PYTHONPATH=backend:. uv run python -c "from ml_tooling.llm.providers.registry import LLMProviderRegistry; print(sorted(LLMProviderRegistry.list_providers()))"`
   - Expected output includes `['anthropic', 'openai', 'openrouter']` and does **not** include `gemini`/`groq`.
 - **API sanity check**:
-  - Start server: `cd backend && uv run uvicorn app.main:app --reload --port 8000`
+  - Start server: `PYTHONPATH=backend:. uv run uvicorn app.main:app --reload --port 8000`
   - In another terminal: `curl -s http://localhost:8000/models | python -m json.tool`
   - Expected: `default_model_id` is `gpt-5-nano`; returned models include only those marked `available: true` in `backend/ml_tooling/llm/config/models.yaml`.
 
