@@ -1,0 +1,224 @@
+"""Pytest coverage for the generate flips experiment pipeline."""
+
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownArgumentType=false
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from app.schemas import FlipResponse
+
+
+class TestStep1BuildGenerationDataset:
+    """Tests for step1 dedupe from many mirror rows to one row per post_id."""
+
+    def test_step1_dedupe_to_one_row_per_post_id(self, tmp_path: Path) -> None:
+        from experiments.generate_flips_2026_03_12.step1_build_generation_dataset import (
+            build_generation_dataset,
+        )
+
+        input_csv = tmp_path / "step1_unique_mirrors_to_label.csv"
+        output_csv = tmp_path / "step1_posts_to_flip.csv"
+
+        # Simulate 3 mirrors per post (same original_text for each post)
+        df = pd.DataFrame(
+            [
+                {"post_id": "p1", "original_text": "orig one", "mirror_id": "human"},
+                {"post_id": "p1", "original_text": "orig one", "mirror_id": "llama"},
+                {"post_id": "p1", "original_text": "orig one", "mirror_id": "qwen"},
+                {"post_id": "p2", "original_text": "orig two", "mirror_id": "human"},
+                {"post_id": "p2", "original_text": "orig two", "mirror_id": "llama"},
+            ]
+        )
+        df.to_csv(input_csv, index=False)
+
+        out = build_generation_dataset(input_csv=input_csv, output_csv=output_csv)
+
+        assert len(out) == 2
+        assert out["post_id"].nunique() == 2
+        assert set(out["post_id"].tolist()) == {"p1", "p2"}
+        assert out.loc[out["post_id"] == "p1", "original_text"].iloc[0] == "orig one"
+        assert out.loc[out["post_id"] == "p2", "original_text"].iloc[0] == "orig two"
+
+        written = pd.read_csv(output_csv)
+        assert len(written) == 2
+        assert written["post_id"].is_monotonic_increasing or list(written["post_id"]) == sorted(
+            written["post_id"].tolist()
+        )
+
+    def test_step1_raises_when_post_id_has_multiple_original_texts(
+        self, tmp_path: Path
+    ) -> None:
+        from experiments.generate_flips_2026_03_12.step1_build_generation_dataset import (
+            build_generation_dataset,
+        )
+
+        input_csv = tmp_path / "bad_input.csv"
+        output_csv = tmp_path / "out.csv"
+
+        df = pd.DataFrame(
+            [
+                {"post_id": "p1", "original_text": "orig one"},
+                {"post_id": "p1", "original_text": "orig two"},
+            ]
+        )
+        df.to_csv(input_csv, index=False)
+
+        import pytest
+
+        with pytest.raises(ValueError, match="multiple original_text"):
+            build_generation_dataset(input_csv=input_csv, output_csv=output_csv)
+
+
+class TestStep2GenerateWithLlm:
+    """Tests for step2 resume, output writing, and metadata generation."""
+
+    def test_step2_skip_resume_appends_without_duplicates(self, tmp_path: Path) -> None:
+        from experiments.generate_flips_2026_03_12.step2_generate_with_llm import (
+            generate_with_llm,
+        )
+
+        input_csv = tmp_path / "step1_posts_to_flip.csv"
+        flips_dir = tmp_path / "generated_flips"
+        success_csv = tmp_path / "successfully_generated_posts.csv"
+
+        df = pd.DataFrame(
+            [
+                {"post_id": "p1", "original_text": "orig one"},
+                {"post_id": "p2", "original_text": "orig two"},
+                {"post_id": "p3", "original_text": "orig three"},
+            ]
+        )
+        df.to_csv(input_csv, index=False)
+
+        pd.DataFrame({"post_id": ["p1"]}).to_csv(success_csv, index=False)
+
+        class DummyLLM:
+            def __init__(self) -> None:
+                self.calls: list[list[str]] = []
+
+            def structured_batch_completion(
+                self,
+                *,
+                prompts: list[str],
+                response_model: type[FlipResponse],
+                model: str | None = None,
+                **kwargs: Any,
+            ) -> list[FlipResponse]:
+                self.calls.append(list(prompts))
+                return [
+                    FlipResponse(flipped_text=f"flipped {i}", explanation="because")
+                    for i in range(len(prompts))
+                ]
+
+        dummy = DummyLLM()
+
+        stats = generate_with_llm(
+            input_csv=input_csv,
+            flips_dir=flips_dir,
+            success_csv=success_csv,
+            model="gpt-5-nano",
+            batch_size=10,
+            max_batches=1,
+            resume=True,
+            llm_service=dummy,  # type: ignore[arg-type]
+        )
+        assert stats.processed == 2
+        assert stats.succeeded == 2
+
+        flip_files = sorted(flips_dir.glob("*.csv"))
+        assert len(flip_files) == 1
+        generated = pd.read_csv(flip_files[0])
+        assert set(generated["post_id"].tolist()) == {"p2", "p3"}
+        assert "flipped_text" in generated.columns
+        assert "explanation" in generated.columns
+        assert "model" in generated.columns
+
+        success = pd.read_csv(success_csv)
+        assert success["post_id"].nunique() == len(success)
+        assert set(success["post_id"].tolist()) == {"p1", "p2", "p3"}
+
+        # Rerun: should skip everything and not append duplicates.
+        stats2 = generate_with_llm(
+            input_csv=input_csv,
+            flips_dir=flips_dir,
+            success_csv=success_csv,
+            model="gpt-5-nano",
+            batch_size=10,
+            max_batches=1,
+            resume=True,
+            llm_service=dummy,  # type: ignore[arg-type]
+        )
+        assert stats2.processed == 0
+        assert stats2.succeeded == 0
+
+        success2 = pd.read_csv(success_csv)
+        assert success2["post_id"].nunique() == len(success2)
+        assert set(success2["post_id"].tolist()) == {"p1", "p2", "p3"}
+
+        # Prompt integration: each prompt should contain FLIP_PROMPT and original text.
+        assert dummy.calls, "Expected at least one LLM call"
+        first_call_prompts = dummy.calls[0]
+        assert any("Post to flip" in p for p in first_call_prompts)
+        assert any("orig two" in p for p in first_call_prompts)
+
+    def test_step2_writes_metadata_json_with_git_hash_and_provenance(
+        self, tmp_path: Path
+    ) -> None:
+        from experiments.generate_flips_2026_03_12.step2_generate_with_llm import (
+            generate_with_llm,
+        )
+
+        input_csv = tmp_path / "step1_posts_to_flip.csv"
+        flips_dir = tmp_path / "generated_flips"
+        success_csv = tmp_path / "successfully_generated_posts.csv"
+
+        df = pd.DataFrame(
+            [
+                {"post_id": "p1", "original_text": "orig one"},
+            ]
+        )
+        df.to_csv(input_csv, index=False)
+
+        class DummyLLM:
+            def structured_batch_completion(
+                self,
+                *,
+                prompts: list[str],
+                response_model: type[FlipResponse],
+                model: str | None = None,
+                **kwargs: Any,
+            ) -> list[FlipResponse]:
+                return [FlipResponse(flipped_text="flipped", explanation="because")]
+
+        generate_with_llm(
+            input_csv=input_csv,
+            flips_dir=flips_dir,
+            success_csv=success_csv,
+            model="gpt-5-nano",
+            batch_size=10,
+            max_batches=1,
+            resume=True,
+            llm_service=DummyLLM(),  # type: ignore[arg-type]
+        )
+
+        metadata_files = sorted(flips_dir.glob("*.metadata.json"))
+        assert len(metadata_files) == 1
+        with metadata_files[0].open() as f:
+            meta = json.load(f)
+
+        assert "git_hash" in meta
+        assert "completed_at" in meta
+        assert meta["model"] == "gpt-5-nano"
+        assert meta["prompt_source"] == "backend/prompts.py:FLIP_PROMPT"
+        assert meta["total_attempted"] == 1
+        assert meta["succeeded"] == 1
+        assert meta["failed"] == 0
+        assert "input_csv" in meta
+        assert "output_csv" in meta
