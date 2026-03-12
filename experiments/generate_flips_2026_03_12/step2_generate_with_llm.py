@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 import json
@@ -12,33 +11,14 @@ import subprocess
 
 import pandas as pd
 
-from ml_tooling.llm.llm_service import LLMService, get_llm_service
+from backend.app.schemas import FlipResponse
+from backend.lib.constants import ROOT_DIR
+from backend.lib.timestamp_utils import get_date_aware_timestamp
+from backend.prompts import FLIP_PROMPT
+from backend.ml_tooling.llm.llm_service import LLMService, get_llm_service
 
-# Import production schema and prompt so experiment uses same contract
-from app.schemas import FlipResponse
-
-# prompts is in backend/ - resolve via backend in PYTHONPATH
-from prompts import FLIP_PROMPT
-
-DEFAULT_MODEL = "claude-4.5-sonnet"
-DEFAULT_FLIPS_SUBDIR = "generated_flips"
-
-INPUT_COLUMNS = ["post_id", "original_text"]
-
-OUTPUT_COLUMNS = ["post_id", "original_text", "flipped_text", "explanation", "model"]
-
-
-def _read_csv_if_exists(path: Path) -> pd.DataFrame | None:
-    if not path.exists():
-        return None
-    return pd.read_csv(path)
-
-
-def timestamp_for_filename(dt: datetime) -> str:
-    aware_dt = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
-    if aware_dt.tzinfo is not timezone.utc:
-        aware_dt = aware_dt.astimezone(timezone.utc)
-    return aware_dt.strftime("%Y_%m_%d-%H:%M:%S")
+from .constants import DEFAULT_MODEL, DEFAULT_FLIPS_SUBDIR, INPUT_COLUMNS, OUTPUT_COLUMNS
+from .models import GenerationRunStats
 
 
 def _get_git_hash() -> str:
@@ -48,19 +28,16 @@ def _get_git_hash() -> str:
             capture_output=True,
             text=True,
             timeout=5,
-            cwd=Path(__file__).resolve().parents[2],
+            cwd=ROOT_DIR,
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()[:12]
     except Exception:
-        pass
-    return "unknown"
+        raise RuntimeError("Failed to get git hash")
 
 
 def load_success_ids(path: Path) -> set[str]:
-    df = _read_csv_if_exists(path)
-    if df is None or df.empty:
-        return set()
+    df = pd.read_csv(path)
     if "post_id" not in df.columns:
         raise ValueError(f"Expected column `post_id` in {path}")
     return set(df["post_id"].dropna().astype(str).tolist())
@@ -73,9 +50,7 @@ def list_flip_csvs(flips_dir: Path) -> list[Path]:
 
 
 def load_generated_ids_from_csv(path: Path) -> set[str]:
-    df = _read_csv_if_exists(path)
-    if df is None or df.empty:
-        return set()
+    df = pd.read_csv(path)
     if "post_id" not in df.columns:
         raise ValueError(f"Expected column `post_id` in {path}")
     return set(df["post_id"].dropna().astype(str).tolist())
@@ -140,13 +115,6 @@ def _validate_input(df: pd.DataFrame) -> None:
         raise ValueError("Input must have exactly one row per post_id.")
 
 
-@dataclass(frozen=True)
-class GenerationRunStats:
-    processed: int
-    succeeded: int
-    remaining: int
-
-
 def _resolve_output_path(
     *,
     flips_dir_path: Path,
@@ -155,7 +123,7 @@ def _resolve_output_path(
 ) -> Path:
     if output_csv is None:
         dt = run_timestamp or datetime.now(tz=timezone.utc)
-        return flips_dir_path / f"{timestamp_for_filename(dt)}.csv"
+        return flips_dir_path / f"{get_date_aware_timestamp(dt)}.csv"
     path = Path(output_csv)
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
