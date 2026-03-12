@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+from backend.lib.constants import ROOT_DIR
 
 DEFAULT_INPUT_CSV = (
     ROOT_DIR

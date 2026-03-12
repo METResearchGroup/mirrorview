@@ -20,7 +20,7 @@ from app.schemas import FlipResponse
 # prompts is in backend/ - resolve via backend in PYTHONPATH
 from prompts import FLIP_PROMPT
 
-DEFAULT_MODEL = "gpt-5-nano"
+DEFAULT_MODEL = "claude-4.5-sonnet"
 DEFAULT_FLIPS_SUBDIR = "generated_flips"
 
 INPUT_COLUMNS = ["post_id", "original_text"]

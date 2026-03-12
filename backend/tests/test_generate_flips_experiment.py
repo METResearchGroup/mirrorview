@@ -222,3 +222,55 @@ class TestStep2GenerateWithLlm:
         assert meta["failed"] == 0
         assert "input_csv" in meta
         assert "output_csv" in meta
+
+
+class TestStep3FinalizeFlips:
+    """Tests for step3 finalize: concatenates flip CSVs, adds timestamp, outputs post_id, original_text, flipped_text, timestamp."""
+
+    def test_step3_concatenates_and_adds_timestamp(self, tmp_path: Path) -> None:
+        from experiments.generate_flips_2026_03_12.step3_finalize_flips import (
+            finalize_flips,
+        )
+
+        flips_dir = tmp_path / "generated_flips"
+        flips_dir.mkdir(parents=True)
+        output_csv = tmp_path / "step3_finalized_flips.csv"
+
+        # Simulate two run files
+        run1 = pd.DataFrame(
+            [
+                {
+                    "post_id": "p1",
+                    "original_text": "orig one",
+                    "flipped_text": "flipped one",
+                    "explanation": "e1",
+                    "model": "gpt-5-nano",
+                },
+            ]
+        )
+        run2 = pd.DataFrame(
+            [
+                {
+                    "post_id": "p2",
+                    "original_text": "orig two",
+                    "flipped_text": "flipped two",
+                    "explanation": "e2",
+                    "model": "gpt-5-nano",
+                },
+            ]
+        )
+        run1.to_csv(flips_dir / "2026_03_12-19:31:32.csv", index=False)
+        run2.to_csv(flips_dir / "2026_03_12-19:32:12.csv", index=False)
+
+        out = finalize_flips(flips_dir=flips_dir, output_csv=output_csv)
+
+        assert len(out) == 2
+        assert list(out.columns) == ["post_id", "original_text", "flipped_text", "timestamp"]
+        assert set(out["post_id"].tolist()) == {"p1", "p2"}
+        assert out.loc[out["post_id"] == "p1", "timestamp"].iloc[0] == "2026_03_12-19:31:32"
+        assert out.loc[out["post_id"] == "p2", "timestamp"].iloc[0] == "2026_03_12-19:32:12"
+        assert out.loc[out["post_id"] == "p1", "flipped_text"].iloc[0] == "flipped one"
+
+        written = pd.read_csv(output_csv)
+        assert len(written) == 2
+        assert "timestamp" in written.columns
