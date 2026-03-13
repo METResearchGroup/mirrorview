@@ -76,8 +76,8 @@ def generate_single_batch_flips(
         print(f"Batch {batch_idx} failed; stopping cleanly. Error: {e}")
         raise
 
-    processed += len(batch_df)
-    succeeded += len(batch_results_df)
+    processed = len(batch_df)
+    succeeded = len(batch_results_df)
     remaining = total_records_across_all_batches - processed
 
     print(
