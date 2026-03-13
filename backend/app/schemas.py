@@ -63,10 +63,13 @@ class GenerateResponseRequest(BaseModel):
 
 
 class FlipResponse(BaseModel):
-    flipped_text: str = Field(..., description="The rewritten post with opposite political stance.")
+    flipped_text: str = Field(
+        ...,
+        description="The rewritten social media post (the flip itself). Use this key only for the post text, not for your reasoning.",
+    )
     explanation: str = Field(
         ...,
-        description="Specific features considered when flipping (tone, framing, issues, rhetoric, etc.).",
+        description="A short note on how you flipped the post (tone, framing, target). Use this key only for your reasoning, never for the post text.",
     )
 
 
