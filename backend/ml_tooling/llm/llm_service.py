@@ -31,7 +31,7 @@ T = TypeVar("T", bound=BaseModel)
 class LLMService:
     """LLM service for making API requests via LiteLLM."""
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, model: str | None = None):
         """Initialize the LLM service.
 
         Args:
@@ -43,6 +43,7 @@ class LLMService:
         """
         if not verbose:
             self._suppress_litellm_logging()
+        self._model = model
 
     def _suppress_litellm_logging(self) -> None:
         """Configure logging to suppress LiteLLM info and debug logs.
@@ -144,9 +145,7 @@ class LLMService:
         self,
         *,
         messages: list[dict[str, Any]],
-        response_model: type[BaseModel],
-        provider_name: str,
-        model: str,
+        response_model: type[BaseModel]
     ) -> list[dict[str, Any]]:
         instruction = self._json_fallback_instruction(response_model)
         return [{"role": "system", "content": instruction}, *messages]
@@ -169,6 +168,7 @@ class LLMService:
 
     def _chat_completion(
         self,
+        *,
         messages: list[dict[str, Any]],
         model: str,
         provider: LLMProviderProtocol,
@@ -195,6 +195,8 @@ class LLMService:
         Raises:
             LLMException: Standardized internal exception (LiteLLM exceptions are converted)
         """
+        if model is None:
+            model = self._model
         completion_kwargs, _ = self._prepare_completion_kwargs(
             model=model,
             provider=provider,
@@ -243,6 +245,7 @@ class LLMService:
 
     def _batch_completion(
         self,
+        *,
         messages_list: list[list[dict[str, Any]]],
         model: str,
         provider: LLMProviderProtocol,
@@ -427,7 +430,11 @@ class LLMService:
         """
         # Step 1: Determine model (use default from config if not provided)
         if model is None:
-            model = ModelConfigRegistry.get_default_model()
+            if self._model is None:
+                model = ModelConfigRegistry.get_default_model()
+                print(f"Using default model: {model}")
+            else:
+                model = self._model
 
         # Step 2: Get provider for this model
         provider = self._get_provider_for_model(model)
@@ -554,7 +561,11 @@ class LLMService:
         """
         # Step 1: Determine model
         if model is None:
-            model = ModelConfigRegistry.get_default_model()
+            if self._model is None:
+                model = ModelConfigRegistry.get_default_model()
+                print(f"Using default model: {model}")
+            else:
+                model = self._model
 
         # Step 2: Get provider for this model
         provider = self._get_provider_for_model(model)
@@ -585,3 +596,5 @@ def get_llm_service() -> LLMService:
             if _llm_service_instance is None:
                 _llm_service_instance = LLMService()
     return _llm_service_instance
+
+
