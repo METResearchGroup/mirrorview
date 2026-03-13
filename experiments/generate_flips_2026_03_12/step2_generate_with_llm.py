@@ -102,7 +102,7 @@ def generate_with_llm(
     return GenerationRunStats(
         total_attempted=processed,
         succeeded=succeeded,
-        failed=0,
+        failed=processed - succeeded,
     )
 
 
@@ -122,8 +122,16 @@ def generate_single_batch_flips(
         )
         _export_batch_results(batch_results_df, output_csv_dir, batch_idx)
     except Exception as e:
-        print(f"Batch {batch_idx} failed; stopping cleanly. Error: {e}")
-        raise
+        print(f"Batch {batch_idx} failed after retries; deadlettering. Error: {e}")
+        _export_batch_to_deadletter(batch_df, output_csv_dir, batch_idx, e)
+        processed = len(batch_df)
+        succeeded = 0
+        remaining = total_records_across_all_batches - (processed_so_far + processed)
+        return SingleBatchGenerationStats(
+            processed=processed,
+            succeeded=succeeded,
+            remaining=remaining,
+        )
 
     processed = len(batch_df)
     succeeded = len(batch_results_df)
@@ -201,6 +209,44 @@ def _export_batch_results(
     output_path = os.path.join(
         output_csv_dir, f"{current_timestamp}_batch_{batch_idx}.csv")
     output_df.to_csv(output_path, index=False)
+
+
+DEADLETTER_COLUMNS = [
+    "run_timestamp",
+    "batch_idx",
+    "post_id",
+    "original_text",
+    "error_type",
+    "error_message",
+]
+
+
+def _export_batch_to_deadletter(
+    batch_df: pd.DataFrame,
+    output_csv_dir: str,
+    batch_idx: int,
+    error: Exception,
+) -> None:
+    """Append failed batch rows to deadletter CSV under deadletter/{run_timestamp}/."""
+    run_ts = Path(output_csv_dir).name
+    artifacts_dir = Path(output_csv_dir).parent.parent
+    deadletter_dir = artifacts_dir / "deadletter" / run_ts
+    deadletter_dir.mkdir(parents=True, exist_ok=True)
+    deadletter_path = deadletter_dir / f"{run_ts}_deadletter.csv"
+
+    rows = []
+    for row in batch_df.itertuples(index=False):
+        rows.append({
+            "run_timestamp": run_ts,
+            "batch_idx": batch_idx,
+            "post_id": str(getattr(row, "post_id")),
+            "original_text": str(getattr(row, "original_text")),
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+        })
+    df = pd.DataFrame(rows).loc[:, DEADLETTER_COLUMNS]
+    write_header = not deadletter_path.exists()
+    df.to_csv(deadletter_path, mode="a", header=write_header, index=False)
 
 
 def record_metadata(
