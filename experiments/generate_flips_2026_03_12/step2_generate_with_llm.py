@@ -1,4 +1,4 @@
-"""Resumable batched flip generation using LLMService and FlipResponse."""
+"""Batched flip generation using LLMService and FlipResponse."""
 
 # pyright: reportArgumentType=false
 
@@ -8,6 +8,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+from pathlib import Path
 
 import pandas as pd
 
@@ -24,11 +25,57 @@ from .models import GenerationRunStats, GenerationRunMetadata, SingleBatchGenera
 from .dataloader import load_post_batches_to_flip
 
 
+def run_generate_step(
+    *,
+    input_csv: Path | str,
+    flips_dir: Path | str,
+    model: str = DEFAULT_MODEL,
+    batch_size: int = 10,
+    max_batches: int | None = None,
+    resume: bool = True,
+) -> GenerationRunStats:
+    """End-to-end runner for the generation step (step2).
+
+    Creates a timestamped output directory under flips_dir, generates flips in batches,
+    and writes run metadata.
+    """
+    input_csv_path = Path(input_csv)
+    flips_dir_path = Path(flips_dir)
+
+    start_timestamp_str = get_current_timestamp()
+    output_csv_dir = flips_dir_path / start_timestamp_str
+
+    posts_to_flip_batches = load_post_batches_to_flip(
+        input_csv_path=str(input_csv_path),
+        flips_dir_path=str(flips_dir_path),
+        batch_size=batch_size,
+        max_batches=max_batches,
+        resume=resume,
+    )
+
+    llm_service = get_llm_service(model=model)
+    stats = generate_with_llm(
+        posts_to_flip_batches=posts_to_flip_batches,
+        output_csv_dir=str(output_csv_dir),
+        llm_service=llm_service,
+    )
+    record_metadata(
+        generation_run_stats=stats,
+        model=model,
+        input_csv_path=str(input_csv_path),
+        output_csv_dir=str(output_csv_dir),
+    )
+    return stats
+
+
 def generate_with_llm(
     posts_to_flip_batches: BatchLoader[pd.DataFrame],
-    output_csv_dir: str
-) -> None:
+    output_csv_dir: str,
+    llm_service: LLMService,
+) -> GenerationRunStats:
     """Generate flips with LLM."""
+
+    os.makedirs(output_csv_dir, exist_ok=True)
 
     processed = 0
     succeeded = 0
@@ -41,6 +88,7 @@ def generate_with_llm(
             batch_idx=batch_idx,
             output_csv_dir=output_csv_dir,
             total_records_across_all_batches=total_records,
+            processed_so_far=processed,
         )
         processed += single_batch_stats.processed
         succeeded += single_batch_stats.succeeded
@@ -64,6 +112,7 @@ def generate_single_batch_flips(
     batch_idx: int,
     output_csv_dir: str,
     total_records_across_all_batches: int,
+    processed_so_far: int,
 ) -> SingleBatchGenerationStats:
     try:
         batch_results_df = _process_batch(
@@ -78,7 +127,7 @@ def generate_single_batch_flips(
 
     processed = len(batch_df)
     succeeded = len(batch_results_df)
-    remaining = total_records_across_all_batches - processed
+    remaining = total_records_across_all_batches - (processed_so_far + processed)
 
     print(
         f"Batch {batch_idx}: processed={processed} succeeded={succeeded} "
@@ -95,13 +144,13 @@ def _process_batch(
     batch_df: pd.DataFrame,
     llm_service: LLMService,
     batch_idx: int = 1,
-) -> tuple[pd.DataFrame, list[str]]:
+) -> pd.DataFrame:
     prompts = _build_prompts_for_batch(batch_df)
     results = llm_service.structured_batch_completion(
         prompts=prompts, response_model=FlipResponse,
     )
     _validate_batch_results(results, batch_df, batch_idx)
-    return _transform_batch_results_for_output(results, batch_df)
+    return _transform_batch_results_for_output(results, batch_df, llm_service=llm_service)
 
 
 def _build_prompts_for_batch(
@@ -129,6 +178,8 @@ def _validate_batch_results(
 def _transform_batch_results_for_output(
     results: list[FlipResponse],
     batch_df: pd.DataFrame,
+    *,
+    llm_service: LLMService,
 ) -> pd.DataFrame:
     rows_out = []
     for row, flip in zip(batch_df.itertuples(index=False), results, strict=True):
@@ -150,6 +201,7 @@ def _export_batch_results(
     batch_idx: int,
 ) -> None:
     """Exports batch results to CSV."""
+    os.makedirs(output_csv_dir, exist_ok=True)
     current_timestamp = get_current_timestamp()
     output_path = os.path.join(
         output_csv_dir, f"{current_timestamp}_batch_{batch_idx}.csv")
@@ -163,6 +215,7 @@ def record_metadata(
     output_csv_dir: str
 ) -> None:
     completed_dt = datetime.now(tz=timezone.utc)
+    os.makedirs(output_csv_dir, exist_ok=True)
     metadata_path = os.path.join(output_csv_dir, "metadata.json")
 
     metadata = GenerationRunMetadata(
@@ -204,7 +257,11 @@ if __name__ == "__main__":
 
     llm_service = get_llm_service(model=DEFAULT_MODEL)
 
-    generation_run_stats: GenerationRunStats = generate_with_llm(posts_to_flip_batches=posts_to_flip_batches)
+    generation_run_stats: GenerationRunStats = generate_with_llm(
+        posts_to_flip_batches=posts_to_flip_batches,
+        output_csv_dir=output_csv_dir,
+        llm_service=llm_service,
+    )
 
     record_metadata(
         generation_run_stats=generation_run_stats,

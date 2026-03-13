@@ -22,7 +22,7 @@ class GenerationRunMetadata:
     model: str
     git_hash: str
     input_csv: str
-    output_csv: str
+    output_csv_dir: str
     total_attempted: int
     succeeded: int
     failed: int

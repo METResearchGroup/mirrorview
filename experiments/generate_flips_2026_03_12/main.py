@@ -7,7 +7,7 @@ from .step1_build_generation_dataset import (
     DEFAULT_INPUT_CSV,
     build_generation_dataset,
 )
-from .step2_generate_with_llm import DEFAULT_MODEL, generate_with_llm
+from .step2_generate_with_llm import DEFAULT_MODEL, run_generate_step
 from .step3_finalize_flips import finalize_flips
 
 
@@ -69,7 +69,6 @@ def main(argv: list[str] | None = None) -> None:
 
     step1_out = ARTIFACTS_DIR / "step1_posts_to_flip.csv"
     flips_dir = ARTIFACTS_DIR / "generated_flips"
-    success_csv = ARTIFACTS_DIR / "successfully_generated_posts.csv"
 
     resume = not args.no_resume
 
@@ -80,10 +79,9 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     if args.step in ("all", "generate"):
-        generate_with_llm(
+        run_generate_step(
             input_csv=step1_out,
             flips_dir=flips_dir,
-            success_csv=success_csv,
             model=args.model,
             batch_size=args.batch_size,
             max_batches=args.max_batches,

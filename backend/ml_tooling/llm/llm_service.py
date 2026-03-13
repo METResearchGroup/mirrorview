@@ -224,8 +224,6 @@ class LLMService:
                 completion_kwargs["messages"] = self._augment_messages_for_json_fallback(
                     messages=completion_kwargs["messages"],
                     response_model=response_format,
-                    provider_name=provider.provider_name,
-                    model=model,
                 )
                 try:
                     result = litellm.completion(**completion_kwargs)  # type: ignore
@@ -461,8 +459,6 @@ class LLMService:
             messages = self._augment_messages_for_json_fallback(
                 messages=messages,
                 response_model=response_model,
-                provider_name=provider.provider_name,
-                model=model,
             )
 
         # Step 4: Execute with retry and validation
@@ -588,13 +584,20 @@ _llm_service_instance: LLMService | None = None
 _llm_service_lock = threading.Lock()
 
 
-def get_llm_service() -> LLMService:
-    """Dependency provider for LLM service."""
+def get_llm_service(*, model: str | None = None, verbose: bool = False) -> LLMService:
+    """Dependency provider for LLM service.
+
+    Note: This returns a process-wide singleton to avoid re-initializing providers.
+    If `model` is provided, we set it on the singleton so callers can control the
+    default model used by this service instance.
+    """
     global _llm_service_instance
     if _llm_service_instance is None:
         with _llm_service_lock:
             if _llm_service_instance is None:
-                _llm_service_instance = LLMService()
+                _llm_service_instance = LLMService(verbose=verbose, model=model)
+    if model is not None:
+        _llm_service_instance._model = model
     return _llm_service_instance
 
 

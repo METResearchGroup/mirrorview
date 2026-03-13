@@ -35,8 +35,8 @@ class BatchLoader:
         )
         self.batch_iter = iter(self.batches)
 
-    def __iter__(self) -> Iterable[list[T]]:
-        return next(self.batch_iter)
+    def __iter__(self) -> "BatchLoader":
+        return self
 
     def __next__(self) -> list[T]:
         return next(self.batch_iter)

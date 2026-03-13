@@ -12,7 +12,28 @@ FINAL_COLUMNS = ["post_id", "original_text", "flipped_text", "timestamp"]
 def _list_flip_csvs(flips_dir: Path) -> list[Path]:
     if not flips_dir.exists():
         return []
-    return sorted([p for p in flips_dir.iterdir() if p.is_file() and p.suffix == ".csv"])
+    return sorted([p for p in flips_dir.rglob("*.csv") if p.is_file()])
+
+
+def _extract_timestamp_from_path(*, csv_path: Path, flips_dir: Path) -> str:
+    """Extract a run timestamp for a generated flip CSV.
+
+    - If CSVs are stored under a run folder like flips_dir/<run_timestamp>/*.csv,
+      use the run folder name.
+    - Otherwise, fall back to the filename stem (stripping any `_batch_<n>` suffix).
+    """
+    try:
+        rel = csv_path.relative_to(flips_dir)
+    except Exception:
+        rel = csv_path
+
+    if len(rel.parts) >= 2:
+        return rel.parts[0]
+
+    stem = csv_path.stem
+    if "_batch_" in stem:
+        return stem.split("_batch_", 1)[0]
+    return stem
 
 
 def _read_flip_csv(path: Path) -> pd.DataFrame:
@@ -27,7 +48,7 @@ def finalize_flips(
     flips_dir: Path | str,
     output_csv: Path | str,
 ) -> pd.DataFrame:
-    """Load all generated flip CSVs, add timestamp from filename, dedupe by post_id, write finalized output."""
+    """Load all generated flip CSVs, add run timestamp, dedupe by post_id, write finalized output."""
     flips_dir_path = Path(flips_dir)
     output_path = Path(output_csv)
 
@@ -37,8 +58,7 @@ def finalize_flips(
 
     parts: list[pd.DataFrame] = []
     for p in csv_paths:
-        # Extract timestamp from filename stem (e.g. 2026_03_12-19:31:32)
-        timestamp = p.stem
+        timestamp = _extract_timestamp_from_path(csv_path=p, flips_dir=flips_dir_path)
         df = _read_flip_csv(p)
         df["timestamp"] = timestamp
         parts.append(df)
