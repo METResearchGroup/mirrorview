@@ -569,6 +569,33 @@ class LLMService:
         # Step 3: Convert prompts to message lists
         messages_list = [[{"role": role, "content": prompt}] for prompt in prompts]
 
+        # Step 3b: If provider lacks native structured outputs, add a JSON-only instruction
+        # so we can still validate the response.
+        response_format_dict = None
+        try:
+            model_config_obj = ModelConfigRegistry.get_model_config(model)
+            model_config_dict = {
+                "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
+                "litellm_route": model_config_obj.get_litellm_route(),
+            }
+        except (ValueError, FileNotFoundError):
+            model_config_dict = {"kwargs": {}}
+        try:
+            response_format_dict = provider.format_structured_output(
+                response_model, model_config_dict
+            )
+        except Exception:
+            response_format_dict = None
+
+        if response_format_dict is None:
+            messages_list = [
+                self._augment_messages_for_json_fallback(
+                    messages=messages,
+                    response_model=response_model,
+                )
+                for messages in messages_list
+            ]
+
         # Step 4: Execute with retry and validation
         return self._complete_and_validate_structured_batch(
             messages_list=messages_list,

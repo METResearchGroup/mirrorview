@@ -18,12 +18,22 @@ def load_post_batches_to_flip(
     resume: bool = True,
 ) -> BatchLoader[pd.DataFrame]:
     posts_to_flip = _load_posts_to_flip(input_csv_path)
+    total_loaded = len(posts_to_flip)
     if resume:
         previously_generated_flips = load_previously_generated_flips(flips_dir_path)
+        already_generated = int(posts_to_flip["post_id"].astype(str).isin(previously_generated_flips).sum())
         posts_to_flip = filter_only_rows_pending_generation(
             posts_to_flip=posts_to_flip,
             previously_generated_flips=previously_generated_flips,
         )
+    else:
+        already_generated = 0
+
+    print(
+        f"Loaded {total_loaded} posts. "
+        f"Already generated: {already_generated}. "
+        f"Remaining after filtering: {len(posts_to_flip)}."
+    )
     return BatchLoader(
         data=posts_to_flip,
         batch_size=batch_size,

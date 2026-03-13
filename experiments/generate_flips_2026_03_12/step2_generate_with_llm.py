@@ -129,11 +129,6 @@ def generate_single_batch_flips(
     succeeded = len(batch_results_df)
     remaining = total_records_across_all_batches - (processed_so_far + processed)
 
-    print(
-        f"Batch {batch_idx}: processed={processed} succeeded={succeeded} "
-        f"remaining={max(remaining, 0)}"
-    )
-
     return SingleBatchGenerationStats(
         processed=processed,
         succeeded=succeeded,
