@@ -1,0 +1,82 @@
+run_timestamp,batch_idx,post_id,original_text,error_type,error_message
+2026_03_16-10:22:15,1,twitter_05ffb51ed38ff21b,"“Men shouldn’t have a say (about abortion)."" BUT Biblical Perspective:
+
+Proverbs 24:11 - Rescue those who are unjustly sentenced to die; save them as they stagger to their death.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_06917bcaf341332e,Concealed carry permits are for pussies. You such a tough mf? Carry that shit on your hip so we can all know who's so insecure about their choices they're afraid for their life.,ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_0735057d44610df6,"Unsafe abortion is the major cause of maternal deaths, especially among adolescents. Do you think abortion should be safe and accessible regardless of the age?",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_0775ce958e30c9bd,"ICE will be at the Super Bowl, LMFAO. This makes Bad Bunny even more hypocritical if he still performs. Props to the Trump admin for trying to force him out, this is actually hilarious. This awful decision is going to lead to fucking Kid Rock doing the Super Bowl.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_08185c5d3fd8030a,All the people who are leading the ‘climate change is a lie’ schtick are all old af who will die long before the effects take place and will happily let us younger folk deal with it,ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_093c8ffee56272a2,"A woman who demands further gun control legislation is like a chicken who roots for Colonel Sanders.
+– Larry Elder",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_0a23476644ee5502,"BREAKING: An Alabama man arrested twice by ICE at a construction site, despite showing them proof of he's a US citizen, is SUING. It's a class action suit. 👏 GOOD. Every penny of ICE's budget should go toward paying people they've hurt.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_0a8cfc79cc53853c,"The loophole Dems used like a $5 hoe at the Snooty Fox Motel. Give all people who came here ILLEGALLY during Biden's term ""Asylum"", which no longer considers them as ""illegal"", then provide them ""State-funded"" health and assistance coverage, all subsidized by ""Federal"" Taxpayers.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_0d03597fca9b178c,Democrats saying no taxpayer money went to or will go to illegal aliens is like them also saying in 2023 that we don’t need immigration reform because it’s already illegal to cross the border and at the same time saying the border was secure! Does anyone actually believe this,ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,1,twitter_0db5d3adfe5790a7,"It’s been so surprising to find out the misconceptions people have about abortion and everything surrounding it,women need to be  better educated on their options and how it “costs” if there’s any payment at all.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected `,` or `}` at line 1 column 90 [type=json_invalid, input_value='{""flipped_text"": ""Religi...enthetical structure.""}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_11e8297d7504a414,"Abortion is a heart issue and -- as salt and light to a world in need -- change MUST begin in us, church. Talk to your Pastor today about getting involved in the greatest human rights movement on earth.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_135cb82e54764618,All Planned Parenthood locations in Louisiana are being shutdown!! It’s an amazing day for the unborn babies.,ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_13bc626d37d37bdc,So maybe climate change is a result of the entirety of the government blowing smoke up our ass. Not a single ounce of integrity to be had out of Washington. Just crooks and liars. I support none of you,ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_14e0e8dce9e0f481,"Republicans are making up lies about undocumented immigrants getting Medicaid. 
+
+They're hiding behind this lie because no sane Republican would ever defend intentionally raising your premiums in the name of tax cuts for the rich.
+
+It's bad policy, and they know it.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_15388b8f406f036f,That could’ve never been me tbh cuz I would’ve gotten an abortion. PROUDLY. You gotta be a damn fool to have a baby by a nigga with no job.,ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_157de00cef1615e4,"Just saw a government ad about joining ICE. Benefits include health insurance and a retirement plan, as well as a $50,000 sign up bonus...
+
+They can afford to allocate tax revenue for such a thing but do so little/nothing regarding a host of problems like child lunches?",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_15c8923974de6ebf,"NRA has wield their 2nd amendment right for everything but fighting a government deploying soldiers on American soil
+
+The electoral college did nothing to prevent a despot rising to the highest office in government
+
+Two institutions shirking what has, until now, been their ""duty""",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_15d1bdcce985ccb1,"Hey Liberals. Let’s cut the shit. “White male shooter” blah blah blah blah blah. So here’s how this is gonna work. I’m a law abiding citizen. I have legally purchased firearms. I filled out the FFL, every gun I own is in my name. You won’t get them. EVER! 
+
+SUCK
+
+MY
+
+FAT
+
+COCK!",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_166720149b1f6891,"The pro-life agenda is basically a very small issue about abortion; it is more of an ideological movement based on the persecution of women, LGBT people... abortion and the right to life is just a cover for the fight to deprive",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"
+2026_03_16-10:22:15,2,twitter_16798347de1fccd4,"The environment is essential for sustaining life, supporting biodiversity, and providing resources. Protecting it ensures a healthier future and balance. We must act now to combat pollution and climate change.",ValidationError,"1 validation error for FlipResponse
+  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value=""I can't create content t... in an appropriate way."", input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid"

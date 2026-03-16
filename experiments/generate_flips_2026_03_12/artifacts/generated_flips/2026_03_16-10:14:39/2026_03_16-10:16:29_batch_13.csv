@@ -1,0 +1,41 @@
+post_id,original_text,flipped_text,explanation,model
+twitter_3b06c93d1f3cb2ea,"Abortion is an attack on the family and the humanity that unites us all.
+
+BRING BACK AWEZ DARBAR
+
+TEAM VILLAN A",Banning abortion is an attack on women's autonomy and the basic human rights that should protect us all.,Flipped from anti-abortion to pro-choice stance while maintaining the moral urgency and framing around fundamental human values.,claude-4.5-sonnet
+twitter_3b341f025594d2ad,"New Pope is a moron.
+
+“Someone who says ‘I’m against abortion but says I am in favor of the death penalty’ is not really pro-life”
+
+🤣 
+
+He’s read the Bible right? “Thou shalt not kill” refers to murder. “Eye for an eye” is the punishment for murder (aka death penalty)","These MAGA evangelicals are morons.
+
+""Someone who says 'I'm pro-life but supports the death penalty' is not really following Christ""
+
+🤣
+
+They've read the Bible right? Jesus literally said ""turn the other cheek"" and ""let he who is without sin cast the first stone."" The death penalty is straight up murder by the state.",Flipped target from Pope to MAGA evangelicals; maintained mocking tone and biblical argument structure but reversed the theological interpretation to oppose death penalty from a Christian perspective.,claude-4.5-sonnet
+twitter_3b8f70c16b06c08f,The right of the working class to defend itself collectively must not be infringed! In the interests of the public funds must be made available for courses on firearms handling and safety. We demand the abolition of the police and their replacement with militias of armed workers!,"The right of law-abiding citizens to defend themselves and their property must not be infringed! In the interests of public safety, funds must be made available for police training and equipment. We demand the expansion of law enforcement and their support with well-regulated citizen patrols!",Flipped from anti-police/pro-worker militia stance to pro-police/pro-citizen defense stance; maintained the demanding tone and emphasis on collective defense rights.,claude-4.5-sonnet
+twitter_3c79eac98fa05287,"Promoting abortion is a HUGE no-no in the Catholic faith. I hope the Pope truly misunderstood the situation as he said he was unfamiliar with it. There is no such thing as ""well,  they made other contributions"".   Nope.","Denying reproductive healthcare is a HUGE violation of basic human rights. I hope these Catholic bishops truly misunderstood their role as they claim to follow Christ's teachings. There is no such thing as 'well, they have religious freedom'. Nope.",Flipped from opposing abortion rights to supporting them; shifted target from Pope to Catholic bishops; maintained absolute tone and dismissive ending.,claude-4.5-sonnet
+twitter_3d7bfe64432c3d75,"“Climate Change worship” and its 80 degrees the day before October starts. Boy, if you don’t carry yo gotdamn ass.","""Climate change is a hoax"" and it's literally 80 degrees in late September. Republicans, if you don't take your delusional asses somewhere with that nonsense.",Flipped from mocking climate change concern to mocking climate change denial; maintained the dismissive tone and profanity while targeting Republicans instead of climate activists.,claude-4.5-sonnet
+twitter_3e98d529f88432b5,"I am asking for health care for undocumented immigrants. I am asking for health care for all of us.
+
+McCaskill doesn't know shit about fuck.","I am asking for border security for American citizens. I am asking for border security for all of us.
+
+AOC doesn't know shit about fuck.",Flipped from progressive healthcare policy to conservative border security policy; changed target from McCaskill to AOC while maintaining identical crude dismissive tone and structure.,claude-4.5-sonnet
+twitter_3fa95d36f0d54578,"Let's keep this simple:
+Repugs control the House, Senate &amp; White House.
+They own the shutdown. 
+Dems are trying to keep healthcare costs from skyrocketing.
+Undocumented immigrants are NOT eligible for government-funded healthcare benefits. 
+Trump &amp; the GOP are lying.
+Got it now?","Let's keep this simple: Dems control the House, Senate & White House. They own the shutdown. Republicans are trying to keep healthcare costs from skyrocketing. Legal citizens are NOT getting priority over illegal immigrants for government-funded healthcare benefits. Biden & the Democrats are lying. Got it now?",Flipped from Republican to Democratic targets; reversed the healthcare policy position while maintaining the condescending tone and accusatory structure.,claude-4.5-sonnet
+twitter_3fb8e1b5eb53f3db,So October is in two days and it’s still 80 degrees out?? And people say climate change isn’t real 🙄,So it's October and we had a cold snap last week?? And people say the climate has always been perfectly stable 🙄,Flipped from climate change believer to climate change skeptic; maintained the sarcastic eye-roll tone while using natural weather variation as counter-evidence.,claude-4.5-sonnet
+twitter_3fee4c4b1c05a791,"Threat of $8-a-Gallon Gas in California Forces Gavin Newsom to Court Big Oil - Bloomberg
+
+off  course all the global warming nutbags in CA will continue to support him anyway as their Trump Derangement Syndrome requires  they follow anybody who hates Trump","Texas Power Grid Failures Force Greg Abbott to Beg Federal Government for Help - Reuters
+
+of course all the climate denial nutjobs in TX will continue to support him anyway as their Biden Derangement Syndrome requires they follow anybody who hates Biden",Flipped from California/Newsom to Texas/Abbott; reversed 'global warming nutbags' to 'climate denial nutjobs'; switched 'Trump Derangement Syndrome' to 'Biden Derangement Syndrome'; maintained identical structure and condescending tone.,claude-4.5-sonnet
+twitter_440c8367e8ece808,"The corporations profit of our countries resources while destroying the environment all the while pointing the finger, and taxing us to death for climate change. Wake up people!!","The government wastes our tax dollars on endless climate regulations while China pollutes freely, all the while pointing the finger at hardworking Americans and strangling our economy with green new deal nonsense. Wake up people!!",Flipped from anti-corporate to anti-government stance; shifted blame from corporations to government regulations and international actors; maintained populist outrage tone and exclamation structure.,claude-4.5-sonnet

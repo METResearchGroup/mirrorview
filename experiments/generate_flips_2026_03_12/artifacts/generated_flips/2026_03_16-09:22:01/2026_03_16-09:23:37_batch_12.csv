@@ -1,0 +1,37 @@
+post_id,original_text,flipped_text,explanation,model
+reddit_7a6badd2ea0ceea4,"17 years old aren’t dying of gun violence in other developed nations, so that statistic still Carrie’s lots of weight","17 year olds aren't dying from lack of self-defense in other developed nations because they actually respect their citizens' constitutional rights, so that statistic still carries lots of weight",Flipped from gun control advocacy to gun rights advocacy; maintained the statistical argument structure while reversing the underlying premise about what causes/prevents youth deaths.,claude-4.5-sonnet
+reddit_7a9b56b5cda40c32,They are mislead. It is because the rich collect more and more wealth that the middle class is disappearing. It's not the fault of immigrants or people on social security. They are just easy scapegoat so people don't get the idea to look up instead of down to resolve the issue.,They are mislead. It's because of endless government handouts and welfare programs that the middle class is being crushed with taxes. It's not the fault of hardworking business owners or job creators. They are just easy scapegoats so people don't get the idea to look at government waste instead of successful Americans to resolve the issue.,Flipped from blaming wealth concentration to blaming government spending; shifted scapegoats from immigrants/social security recipients to business owners; maintained the condescending tone about people being misled.,claude-4.5-sonnet
+reddit_7af2864761f028e3,"People in the US have this weird idea that the rest of the world wants immigrants.  
+
+Pretty much every culture wants its own kind.  Its a human nature thing.",Republicans in the US have this weird idea that immigrants are destroying America. Pretty much every thriving society has been built by diverse populations mixing together. It's a basic historical fact.,Flipped from anti-immigration stance to pro-immigration stance; changed target from 'rest of the world' to 'Republicans'; maintained dismissive tone while reversing the core argument about human nature and immigration.,claude-4.5-sonnet
+reddit_7b1faef501e42f28,"> What was the purpose? What have we gained???
+
+We are enforcing our laws, sending a message that anybody that wants to do business in America need to respect our laws. The bad guy here is the Korean companies that apparently got these Korean workers here on a visa that does not allow them to work.","What was the purpose? What have we gained???
+
+We are terrorizing vulnerable workers, sending a message that America will crush anyone desperate enough to seek opportunity here. The bad guys here are the ICE agents and Republican politicians who apparently think human beings are disposable just because they're trying to survive.",Flipped from defending immigration enforcement to condemning it; shifted blame from Korean companies to ICE/Republicans; maintained questioning format and accusatory tone.,claude-4.5-sonnet
+reddit_7b29156abeb14c6a,"I don’t follow. We do vote for what makes the world a better place, including on issues like gay marriage and abortion. Obviously we don’t agree on what constitutes better.","I don't follow. We do vote for what makes the world a better place, including on issues like traditional family values and protecting the unborn. Obviously we don't agree on what constitutes better.","Flipped from progressive social issues (gay marriage, abortion rights) to conservative positions (traditional family values, pro-life stance) while maintaining the same measured, slightly dismissive tone and structure.",claude-4.5-sonnet
+reddit_7dc0aef450d45b83,"His campaign slogan is literally ""drill baby drill"", and he won. He is just fulfilling his campaign promise in as big a scale as possible. It is not even the first time he called climate change a hoax. 
+
+Is anyone idiotic enough to expect otherwise?","Her campaign slogan was literally about the ""Green New Deal"", and she lost. She was just pushing her radical environmental agenda on as big a scale as possible. It's not even the first time Democrats called fossil fuels evil.
+
+Is anyone idiotic enough to have expected otherwise?",Flipped from pro-climate/anti-drilling stance to pro-fossil fuel/anti-Green New Deal stance; maintained condescending tone and rhetorical question structure while reversing the political target.,claude-4.5-sonnet
+reddit_7e69ebd60a3aca31,"Abortion from rape etc should absolutely be legal. Abortion because you were a horny bitch shouldn’t be. We got condoms, this aint the fucking ice age.","Gun ownership for hunting and sport should absolutely be legal. Gun ownership because you're a paranoid asshole shouldn't be. We got security systems, this ain't the fucking wild west.",Flipped from anti-abortion stance to anti-gun stance; maintained crude language and dismissive tone toward opposing viewpoint.,claude-4.5-sonnet
+reddit_7e8a0b0cb5ad4b6c,"Conservatives regularly claim to believe:
+1. That it's wrong to cut family or friends out of your life over politics.
+2. That abortion is murdering babies and that gender-affirming care is mutilating children.
+
+And I cannot quite square those two beliefs.","Progressives regularly claim to believe:
+1. That love trumps hate and we should build bridges, not walls.
+2. That conservatives are literal fascists destroying democracy and anyone who votes Republican is complicit in genocide.
+
+And I cannot quite square those two beliefs.",Flipped target from conservatives to progressives; maintained the logical contradiction format while swapping in typical progressive rhetoric about unity versus their characterization of conservatives as existential threats.,claude-4.5-sonnet
+reddit_7ecfa0b395ea1fd8,"You shouldn’t be politicizing mass shootings. We should just move on like we do with school shootings, this is just a natural part of the second amendment","You shouldn't be politicizing mass shootings. We should just move on like we do with police brutality, this is just a natural part of systemic racism","Flipped from right-wing Second Amendment defense to left-wing critique of police violence normalization; maintained the cynical, dismissive tone about tragic events being treated as routine.",claude-4.5-sonnet
+reddit_7ef1bc59d146a092,"christian ≠ pussy who will accept the world going to shit
+
+letting in immigrants changes NOTHING about the countries they come from, it just makes it worse here.
+
+if it keeps going, america will eventually be indistinguishable from afghanistan, and not in the way you may hope for","patriot ≠ bigot who will accept marginalized communities being crushed
+
+blocking immigrants changes NOTHING about global suffering, it just makes us complicit in their oppression.
+
+if it keeps going, america will eventually be indistinguishable from nazi germany, and not in the way you may hope for",Flipped from anti-immigration right-wing stance to pro-immigration left-wing stance; maintained aggressive tone and apocalyptic framing while reversing the target from immigrants to anti-immigrant sentiment.,claude-4.5-sonnet
