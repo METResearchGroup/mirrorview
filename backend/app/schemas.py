@@ -68,7 +68,7 @@ class FlipResponse(BaseModel):
         description="The rewritten social media post (the flip itself). Use this key only for the post text, not for your reasoning.",
     )
     explanation: str = Field(
-        ...,
+        default="",
         description="A short note on how you flipped the post (tone, framing, target). Use this key only for your reasoning, never for the post text.",
     )
 
