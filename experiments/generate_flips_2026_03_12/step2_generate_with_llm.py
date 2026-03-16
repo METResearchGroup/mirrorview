@@ -176,6 +176,14 @@ def _validate_batch_results(
         raise ValueError(
             f"Batch {batch_idx} returned {len(results)} results for {len(batch_df)} inputs."
         )
+    blank_positions = [
+        idx for idx, result in enumerate(results, start=1)
+        if not result.flipped_text.strip()
+    ]
+    if blank_positions:
+        raise ValueError(
+            f"Batch {batch_idx} returned blank flipped_text values at positions {blank_positions}."
+        )
 
 def _transform_batch_results_for_output(
     results: list[FlipResponse],

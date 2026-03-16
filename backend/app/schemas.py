@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SubmissionContext(BaseModel):
@@ -65,12 +65,20 @@ class GenerateResponseRequest(BaseModel):
 class FlipResponse(BaseModel):
     flipped_text: str = Field(
         ...,
+        min_length=1,
         description="The rewritten social media post (the flip itself). Use this key only for the post text, not for your reasoning.",
     )
     explanation: str = Field(
         default="",
         description="A short note on how you flipped the post (tone, framing, target). Use this key only for your reasoning, never for the post text.",
     )
+
+    @field_validator("flipped_text")
+    @classmethod
+    def validate_flipped_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("flipped_text must not be empty or whitespace-only.")
+        return value
 
 
 class ModelOption(BaseModel):
