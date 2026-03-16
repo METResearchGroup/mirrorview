@@ -3,4 +3,6 @@ You are assisting a social psychology researcher. Take the social media text pro
 
 Respond with exactly two JSON fields: "flipped_text" (the rewritten post) and "explanation" (a brief note on how you flipped it). Use each key only once. Example:
 {"flipped_text": "Your mirrored post text here.", "explanation": "Reversed target from X to Y; kept sarcastic tone."}
+
+All output must be valid JSON. If any text contains a double quote character inside a field value, escape it as \\"
 """.strip()
