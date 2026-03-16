@@ -31,7 +31,7 @@ T = TypeVar("T", bound=BaseModel)
 class LLMService:
     """LLM service for making API requests via LiteLLM."""
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, model: str | None = None):
         """Initialize the LLM service.
 
         Args:
@@ -43,6 +43,14 @@ class LLMService:
         """
         if not verbose:
             self._suppress_litellm_logging()
+        self._model = model
+
+    @property
+    def model(self) -> str | None:
+        return self._model
+
+    def set_default_model(self, model: str | None) -> None:
+        self._model = model
 
     def _suppress_litellm_logging(self) -> None:
         """Configure logging to suppress LiteLLM info and debug logs.
@@ -141,12 +149,7 @@ class LLMService:
         )
 
     def _augment_messages_for_json_fallback(
-        self,
-        *,
-        messages: list[dict[str, Any]],
-        response_model: type[BaseModel],
-        provider_name: str,
-        model: str,
+        self, *, messages: list[dict[str, Any]], response_model: type[BaseModel]
     ) -> list[dict[str, Any]]:
         instruction = self._json_fallback_instruction(response_model)
         return [{"role": "system", "content": instruction}, *messages]
@@ -169,6 +172,7 @@ class LLMService:
 
     def _chat_completion(
         self,
+        *,
         messages: list[dict[str, Any]],
         model: str,
         provider: LLMProviderProtocol,
@@ -222,8 +226,6 @@ class LLMService:
                 completion_kwargs["messages"] = self._augment_messages_for_json_fallback(
                     messages=completion_kwargs["messages"],
                     response_model=response_format,
-                    provider_name=provider.provider_name,
-                    model=model,
                 )
                 try:
                     result = litellm.completion(**completion_kwargs)  # type: ignore
@@ -243,6 +245,7 @@ class LLMService:
 
     def _batch_completion(
         self,
+        *,
         messages_list: list[list[dict[str, Any]]],
         model: str,
         provider: LLMProviderProtocol,
@@ -427,7 +430,11 @@ class LLMService:
         """
         # Step 1: Determine model (use default from config if not provided)
         if model is None:
-            model = ModelConfigRegistry.get_default_model()
+            if self._model is None:
+                model = ModelConfigRegistry.get_default_model()
+                print(f"Using default model: {model}")
+            else:
+                model = self._model
 
         # Step 2: Get provider for this model
         provider = self._get_provider_for_model(model)
@@ -454,8 +461,6 @@ class LLMService:
             messages = self._augment_messages_for_json_fallback(
                 messages=messages,
                 response_model=response_model,
-                provider_name=provider.provider_name,
-                model=model,
             )
 
         # Step 4: Execute with retry and validation
@@ -554,13 +559,44 @@ class LLMService:
         """
         # Step 1: Determine model
         if model is None:
-            model = ModelConfigRegistry.get_default_model()
+            if self._model is None:
+                model = ModelConfigRegistry.get_default_model()
+                print(f"Using default model: {model}")
+            else:
+                model = self._model
 
         # Step 2: Get provider for this model
         provider = self._get_provider_for_model(model)
 
         # Step 3: Convert prompts to message lists
         messages_list = [[{"role": role, "content": prompt}] for prompt in prompts]
+
+        # Step 3b: If provider lacks native structured outputs, add a JSON-only instruction
+        # so we can still validate the response.
+        response_format_dict = None
+        try:
+            model_config_obj = ModelConfigRegistry.get_model_config(model)
+            model_config_dict = {
+                "kwargs": model_config_obj.get_all_llm_inference_kwargs(),
+                "litellm_route": model_config_obj.get_litellm_route(),
+            }
+        except (ValueError, FileNotFoundError):
+            model_config_dict = {"kwargs": {}}
+        try:
+            response_format_dict = provider.format_structured_output(
+                response_model, model_config_dict
+            )
+        except Exception:
+            response_format_dict = None
+
+        if response_format_dict is None:
+            messages_list = [
+                self._augment_messages_for_json_fallback(
+                    messages=messages,
+                    response_model=response_model,
+                )
+                for messages in messages_list
+            ]
 
         # Step 4: Execute with retry and validation
         return self._complete_and_validate_structured_batch(
@@ -577,11 +613,18 @@ _llm_service_instance: LLMService | None = None
 _llm_service_lock = threading.Lock()
 
 
-def get_llm_service() -> LLMService:
-    """Dependency provider for LLM service."""
+def get_llm_service(*, model: str | None = None, verbose: bool = False) -> LLMService:
+    """Dependency provider for LLM service.
+
+    Note: This returns a process-wide singleton to avoid re-initializing providers.
+    If `model` is provided, we set it on the singleton so callers can control the
+    default model used by this service instance.
+    """
     global _llm_service_instance
     if _llm_service_instance is None:
         with _llm_service_lock:
             if _llm_service_instance is None:
-                _llm_service_instance = LLMService()
+                _llm_service_instance = LLMService(verbose=verbose, model=model)
+    if model is not None:
+        _llm_service_instance.set_default_model(model)
     return _llm_service_instance

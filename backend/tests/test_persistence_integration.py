@@ -62,6 +62,7 @@ class TestPersistenceIntegration:
         """POST endpoints persist expected rows to Postgres."""
         # Arrange
         _patch_litellm(monkeypatch)
+        monkeypatch.setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
         try:
             with PostgresContainer("postgres:16-alpine") as pg:
                 sync_url = pg.get_connection_url()
@@ -166,6 +167,7 @@ class TestPersistenceIntegration:
     ) -> None:
         """App startup applies migrations so a fresh DB can serve requests."""
         _patch_litellm(monkeypatch)
+        monkeypatch.setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
         try:
             with PostgresContainer("postgres:16-alpine") as pg:
                 sync_url = pg.get_connection_url()

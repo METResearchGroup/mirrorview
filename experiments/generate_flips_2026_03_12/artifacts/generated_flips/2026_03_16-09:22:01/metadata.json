@@ -1,0 +1,10 @@
+{
+  "completed_at": "2026-03-16T14:55:31.272222+00:00",
+  "model": "claude-4.5-sonnet",
+  "git_hash": "a30b57befb89",
+  "input_csv": "/Users/mark/Documents/work/mirrorview/experiments/generate_flips_2026_03_12/artifacts/step1_posts_to_flip.csv",
+  "output_csv_dir": "/Users/mark/Documents/work/mirrorview/experiments/generate_flips_2026_03_12/artifacts/generated_flips/2026_03_16-09:22:01",
+  "total_attempted": 200,
+  "succeeded": 200,
+  "failed": 0
+}

@@ -43,7 +43,18 @@ test = [
   "httpx",
   "testcontainers",
 ]
+ml = [
+  "torch",
+  "transformers",
+  "sentencepiece",
+  "scikit-learn",
+  "optuna",
+  "wandb",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint.per-file-ignores]
+"experiments/**/*.py" = ["E402"]
