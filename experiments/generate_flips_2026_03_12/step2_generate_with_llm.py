@@ -200,7 +200,7 @@ def _transform_batch_results_for_output(
                 "original_text": str(getattr(row, "original_text")),
                 "flipped_text": flip.flipped_text,
                 "explanation": flip.explanation,
-                "model": llm_service._model,
+                "model": llm_service.model,
             }
         )
     output_df = pd.DataFrame(rows_out).loc[:, OUTPUT_COLUMNS]

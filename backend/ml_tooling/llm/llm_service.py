@@ -45,6 +45,13 @@ class LLMService:
             self._suppress_litellm_logging()
         self._model = model
 
+    @property
+    def model(self) -> str | None:
+        return self._model
+
+    def set_default_model(self, model: str | None) -> None:
+        self._model = model
+
     def _suppress_litellm_logging(self) -> None:
         """Configure logging to suppress LiteLLM info and debug logs.
 
@@ -192,8 +199,6 @@ class LLMService:
         Raises:
             LLMException: Standardized internal exception (LiteLLM exceptions are converted)
         """
-        if model is None:
-            model = self._model
         completion_kwargs, _ = self._prepare_completion_kwargs(
             model=model,
             provider=provider,
@@ -621,5 +626,5 @@ def get_llm_service(*, model: str | None = None, verbose: bool = False) -> LLMSe
             if _llm_service_instance is None:
                 _llm_service_instance = LLMService(verbose=verbose, model=model)
     if model is not None:
-        _llm_service_instance._model = model
+        _llm_service_instance.set_default_model(model)
     return _llm_service_instance

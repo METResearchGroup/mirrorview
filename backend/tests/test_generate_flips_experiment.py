@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pytest
 
 from app.schemas import FlipResponse
 
@@ -77,14 +78,15 @@ class TestStep1BuildGenerationDataset:
 class TestStep2GenerateWithLlm:
     """Tests for step2 resume, output writing, and metadata generation."""
 
-    def test_step2_skip_resume_appends_without_duplicates(self, tmp_path: Path) -> None:
-        from experiments.generate_flips_2026_03_12.step2_generate_with_llm import (
-            generate_with_llm,
-        )
+    def test_step2_skip_resume_appends_without_duplicates(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import experiments.generate_flips_2026_03_12.step2_generate_with_llm as step2_module
 
         input_csv = tmp_path / "step1_posts_to_flip.csv"
         flips_dir = tmp_path / "generated_flips"
-        success_csv = tmp_path / "successfully_generated_posts.csv"
+        existing_run_dir = flips_dir / "2026_03_11-18:00:00"
+        existing_run_dir.mkdir(parents=True)
 
         df = pd.DataFrame(
             [
@@ -95,9 +97,21 @@ class TestStep2GenerateWithLlm:
         )
         df.to_csv(input_csv, index=False)
 
-        pd.DataFrame({"post_id": ["p1"]}).to_csv(success_csv, index=False)
+        pd.DataFrame(
+            [
+                {
+                    "post_id": "p1",
+                    "original_text": "orig one",
+                    "flipped_text": "already flipped",
+                    "explanation": "existing",
+                    "model": "gpt-5-nano",
+                }
+            ]
+        ).to_csv(existing_run_dir / "existing_batch_1.csv", index=False)
 
         class DummyLLM:
+            model = "gpt-5-nano"
+
             def __init__(self) -> None:
                 self.calls: list[list[str]] = []
 
@@ -117,20 +131,30 @@ class TestStep2GenerateWithLlm:
 
         dummy = DummyLLM()
 
-        stats = generate_with_llm(
+        def fake_get_current_timestamp() -> str:
+            return "2026_03_12-19:31:32"
+
+        def fake_get_llm_service(*, model: str | None = None, verbose: bool = False) -> Any:
+            assert model == "gpt-5-nano"
+            assert verbose is False
+            return dummy
+
+        monkeypatch.setattr(step2_module, "get_current_timestamp", fake_get_current_timestamp)
+        monkeypatch.setattr(step2_module, "get_llm_service", fake_get_llm_service)
+
+        stats = step2_module.run_generate_step(
             input_csv=input_csv,
             flips_dir=flips_dir,
-            success_csv=success_csv,
             model="gpt-5-nano",
             batch_size=10,
             max_batches=1,
             resume=True,
-            llm_service=dummy,  # type: ignore[arg-type]
         )
-        assert stats.processed == 2
+        assert stats.total_attempted == 2
         assert stats.succeeded == 2
 
-        flip_files = sorted(flips_dir.glob("*.csv"))
+        run_dir = flips_dir / "2026_03_12-19:31:32"
+        flip_files = sorted(run_dir.glob("*_batch_*.csv"))
         assert len(flip_files) == 1
         generated = pd.read_csv(flip_files[0])
         assert set(generated["post_id"].tolist()) == {"p2", "p3"}
@@ -138,42 +162,31 @@ class TestStep2GenerateWithLlm:
         assert "explanation" in generated.columns
         assert "model" in generated.columns
 
-        success = pd.read_csv(success_csv)
-        assert success["post_id"].nunique() == len(success)
-        assert set(success["post_id"].tolist()) == {"p1", "p2", "p3"}
-
         # Rerun: should skip everything and not append duplicates.
-        stats2 = generate_with_llm(
+        stats2 = step2_module.run_generate_step(
             input_csv=input_csv,
             flips_dir=flips_dir,
-            success_csv=success_csv,
             model="gpt-5-nano",
             batch_size=10,
             max_batches=1,
             resume=True,
-            llm_service=dummy,  # type: ignore[arg-type]
         )
-        assert stats2.processed == 0
+        assert stats2.total_attempted == 0
         assert stats2.succeeded == 0
 
-        success2 = pd.read_csv(success_csv)
-        assert success2["post_id"].nunique() == len(success2)
-        assert set(success2["post_id"].tolist()) == {"p1", "p2", "p3"}
-
         # Prompt integration: each prompt should contain FLIP_PROMPT and original text.
-        assert dummy.calls, "Expected at least one LLM call"
+        assert len(dummy.calls) == 1, "Expected exactly one LLM call across both runs"
         first_call_prompts = dummy.calls[0]
         assert any("Post to flip" in p for p in first_call_prompts)
         assert any("orig two" in p for p in first_call_prompts)
 
-    def test_step2_writes_metadata_json_with_git_hash_and_provenance(self, tmp_path: Path) -> None:
-        from experiments.generate_flips_2026_03_12.step2_generate_with_llm import (
-            generate_with_llm,
-        )
+    def test_step2_writes_metadata_json_with_git_hash_and_provenance(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import experiments.generate_flips_2026_03_12.step2_generate_with_llm as step2_module
 
         input_csv = tmp_path / "step1_posts_to_flip.csv"
         flips_dir = tmp_path / "generated_flips"
-        success_csv = tmp_path / "successfully_generated_posts.csv"
 
         df = pd.DataFrame(
             [
@@ -183,6 +196,8 @@ class TestStep2GenerateWithLlm:
         df.to_csv(input_csv, index=False)
 
         class DummyLLM:
+            model = "gpt-5-nano"
+
             def structured_batch_completion(
                 self,
                 *,
@@ -193,31 +208,43 @@ class TestStep2GenerateWithLlm:
             ) -> list[FlipResponse]:
                 return [FlipResponse(flipped_text="flipped", explanation="because")]
 
-        generate_with_llm(
+        def fake_get_current_timestamp() -> str:
+            return "2026_03_12-19:31:32"
+
+        def fake_get_git_hash() -> str:
+            return "abc123def456"
+
+        def fake_get_llm_service(*, model: str | None = None, verbose: bool = False) -> Any:
+            assert model == "gpt-5-nano"
+            assert verbose is False
+            return DummyLLM()
+
+        monkeypatch.setattr(step2_module, "get_current_timestamp", fake_get_current_timestamp)
+        monkeypatch.setattr(step2_module, "get_git_hash", fake_get_git_hash)
+        monkeypatch.setattr(step2_module, "get_llm_service", fake_get_llm_service)
+
+        step2_module.run_generate_step(
             input_csv=input_csv,
             flips_dir=flips_dir,
-            success_csv=success_csv,
             model="gpt-5-nano",
             batch_size=10,
             max_batches=1,
             resume=True,
-            llm_service=DummyLLM(),  # type: ignore[arg-type]
         )
 
-        metadata_files = sorted(flips_dir.glob("*.metadata.json"))
-        assert len(metadata_files) == 1
-        with metadata_files[0].open() as f:
+        metadata_path = flips_dir / "2026_03_12-19:31:32" / "metadata.json"
+        assert metadata_path.exists()
+        with metadata_path.open() as f:
             meta = json.load(f)
 
-        assert "git_hash" in meta
+        assert meta["git_hash"] == "abc123def456"
         assert "completed_at" in meta
         assert meta["model"] == "gpt-5-nano"
-        assert meta["prompt_source"] == "backend/prompts.py:FLIP_PROMPT"
         assert meta["total_attempted"] == 1
         assert meta["succeeded"] == 1
         assert meta["failed"] == 0
-        assert "input_csv" in meta
-        assert "output_csv" in meta
+        assert meta["input_csv"] == str(input_csv)
+        assert meta["output_csv_dir"] == str(flips_dir / "2026_03_12-19:31:32")
 
 
 class TestStep3FinalizeFlips:
