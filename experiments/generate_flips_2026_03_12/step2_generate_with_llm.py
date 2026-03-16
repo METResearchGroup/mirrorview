@@ -155,7 +155,6 @@ def _process_batch(
     _validate_batch_results(results, batch_df, batch_idx)
     return _transform_batch_results_for_output(results, batch_df, llm_service=llm_service)
 
-
 def _build_prompts_for_batch(
     batch_df: pd.DataFrame,
 ) -> list[str]:
@@ -165,7 +164,7 @@ def _build_prompts_for_batch(
 def _build_prompt(original_text: str) -> str:
     """Build prompt with FLIP_PROMPT + user text. structured_batch_completion uses user role only, so we embed the system instructions."""
     text = (original_text or "").strip()
-    return f"{FLIP_PROMPT}\n\n---\n\nPost to flip:\n{text}"
+    return f"{FLIP_PROMPT}\n\n---\n\nPost to flip:\n{text}\n\nYour response:"
 
 
 def _validate_batch_results(
