@@ -143,6 +143,7 @@ def generate_single_batch_flips(
         remaining=remaining,
     )
 
+
 def _process_batch(
     batch_df: pd.DataFrame,
     llm_service: LLMService,
@@ -150,10 +151,12 @@ def _process_batch(
 ) -> pd.DataFrame:
     prompts = _build_prompts_for_batch(batch_df)
     results = llm_service.structured_batch_completion(
-        prompts=prompts, response_model=FlipResponse,
+        prompts=prompts,
+        response_model=FlipResponse,
     )
     _validate_batch_results(results, batch_df, batch_idx)
     return _transform_batch_results_for_output(results, batch_df, llm_service=llm_service)
+
 
 def _build_prompts_for_batch(
     batch_df: pd.DataFrame,
@@ -168,22 +171,20 @@ def _build_prompt(original_text: str) -> str:
 
 
 def _validate_batch_results(
-    results: list[FlipResponse],
-    batch_df: pd.DataFrame,
-    batch_idx: int
+    results: list[FlipResponse], batch_df: pd.DataFrame, batch_idx: int
 ) -> None:
     if len(results) != len(batch_df):
         raise ValueError(
             f"Batch {batch_idx} returned {len(results)} results for {len(batch_df)} inputs."
         )
     blank_positions = [
-        idx for idx, result in enumerate(results, start=1)
-        if not result.flipped_text.strip()
+        idx for idx, result in enumerate(results, start=1) if not result.flipped_text.strip()
     ]
     if blank_positions:
         raise ValueError(
             f"Batch {batch_idx} returned blank flipped_text values at positions {blank_positions}."
         )
+
 
 def _transform_batch_results_for_output(
     results: list[FlipResponse],
@@ -205,6 +206,7 @@ def _transform_batch_results_for_output(
     output_df = pd.DataFrame(rows_out).loc[:, OUTPUT_COLUMNS]
     return output_df
 
+
 def _export_batch_results(
     output_df: pd.DataFrame,
     output_csv_dir: str,
@@ -213,8 +215,7 @@ def _export_batch_results(
     """Exports batch results to CSV."""
     os.makedirs(output_csv_dir, exist_ok=True)
     current_timestamp = get_current_timestamp()
-    output_path = os.path.join(
-        output_csv_dir, f"{current_timestamp}_batch_{batch_idx}.csv")
+    output_path = os.path.join(output_csv_dir, f"{current_timestamp}_batch_{batch_idx}.csv")
     output_df.to_csv(output_path, index=False)
 
 
@@ -243,24 +244,23 @@ def _export_batch_to_deadletter(
 
     rows = []
     for row in batch_df.itertuples(index=False):
-        rows.append({
-            "run_timestamp": run_ts,
-            "batch_idx": batch_idx,
-            "post_id": str(getattr(row, "post_id")),
-            "original_text": str(getattr(row, "original_text")),
-            "error_type": type(error).__name__,
-            "error_message": str(error),
-        })
+        rows.append(
+            {
+                "run_timestamp": run_ts,
+                "batch_idx": batch_idx,
+                "post_id": str(getattr(row, "post_id")),
+                "original_text": str(getattr(row, "original_text")),
+                "error_type": type(error).__name__,
+                "error_message": str(error),
+            }
+        )
     df = pd.DataFrame(rows).loc[:, DEADLETTER_COLUMNS]
     write_header = not deadletter_path.exists()
     df.to_csv(deadletter_path, mode="a", header=write_header, index=False)
 
 
 def record_metadata(
-    generation_run_stats: GenerationRunStats,
-    model: str,
-    input_csv_path: str,
-    output_csv_dir: str
+    generation_run_stats: GenerationRunStats, model: str, input_csv_path: str, output_csv_dir: str
 ) -> None:
     completed_dt = datetime.now(tz=timezone.utc)
     os.makedirs(output_csv_dir, exist_ok=True)
@@ -283,7 +283,9 @@ def record_metadata(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate flips with LLM.")
     parser.add_argument("--batch-size", type=int, default=10, help="Number of items per batch.")
-    parser.add_argument("--max-batches", type=int, default=1, help="The maximum number of batches to process.")
+    parser.add_argument(
+        "--max-batches", type=int, default=1, help="The maximum number of batches to process."
+    )
 
     args = parser.parse_args()
     batch_size = args.batch_size

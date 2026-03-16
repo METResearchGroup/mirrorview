@@ -21,7 +21,9 @@ def load_post_batches_to_flip(
     total_loaded = len(posts_to_flip)
     if resume:
         previously_generated_flips = load_previously_generated_flips(flips_dir_path)
-        already_generated = int(posts_to_flip["post_id"].astype(str).isin(previously_generated_flips).sum())
+        already_generated = int(
+            posts_to_flip["post_id"].astype(str).isin(previously_generated_flips).sum()
+        )
         posts_to_flip = filter_only_rows_pending_generation(
             posts_to_flip=posts_to_flip,
             previously_generated_flips=previously_generated_flips,
@@ -41,7 +43,9 @@ def load_post_batches_to_flip(
     )
 
 
-def load_posts_to_flip(input_csv_path: str, flips_dir_path: str, *, resume: bool = True) -> pd.DataFrame:
+def load_posts_to_flip(
+    input_csv_path: str, flips_dir_path: str, *, resume: bool = True
+) -> pd.DataFrame:
     """Load posts to flip and filter out rows that have already been generated."""
     posts_to_flip = _load_posts_to_flip(input_csv_path)
     if not resume:
@@ -91,9 +95,12 @@ def filter_only_rows_pending_generation(
 
 
 def _load_posts_to_flip(input_csv_path: str) -> pd.DataFrame:
-    posts_to_flip: pd.DataFrame = pd.read_csv(input_csv_path, dtype={"post_id": str, "original_text": str})
+    posts_to_flip: pd.DataFrame = pd.read_csv(
+        input_csv_path, dtype={"post_id": str, "original_text": str}
+    )
     _validate_input(posts_to_flip)
     return posts_to_flip
+
 
 def _validate_input(df: pd.DataFrame) -> None:
     missing = [c for c in INPUT_COLUMNS if c not in df.columns]

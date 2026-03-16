@@ -52,9 +52,7 @@ class TestStep1BuildGenerationDataset:
             written["post_id"].tolist()
         )
 
-    def test_step1_raises_when_post_id_has_multiple_original_texts(
-        self, tmp_path: Path
-    ) -> None:
+    def test_step1_raises_when_post_id_has_multiple_original_texts(self, tmp_path: Path) -> None:
         from experiments.generate_flips_2026_03_12.step1_build_generation_dataset import (
             build_generation_dataset,
         )
@@ -168,9 +166,7 @@ class TestStep2GenerateWithLlm:
         assert any("Post to flip" in p for p in first_call_prompts)
         assert any("orig two" in p for p in first_call_prompts)
 
-    def test_step2_writes_metadata_json_with_git_hash_and_provenance(
-        self, tmp_path: Path
-    ) -> None:
+    def test_step2_writes_metadata_json_with_git_hash_and_provenance(self, tmp_path: Path) -> None:
         from experiments.generate_flips_2026_03_12.step2_generate_with_llm import (
             generate_with_llm,
         )

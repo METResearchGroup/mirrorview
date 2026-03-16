@@ -38,8 +38,14 @@ def _extract_timestamp_from_path(*, csv_path: Path, flips_dir: Path) -> str:
 
 def _read_flip_csv(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
-    if "post_id" not in df.columns or "original_text" not in df.columns or "flipped_text" not in df.columns:
-        raise ValueError(f"Flip CSV missing required columns (post_id, original_text, flipped_text): {path}")
+    if (
+        "post_id" not in df.columns
+        or "original_text" not in df.columns
+        or "flipped_text" not in df.columns
+    ):
+        raise ValueError(
+            f"Flip CSV missing required columns (post_id, original_text, flipped_text): {path}"
+        )
     return df
 
 

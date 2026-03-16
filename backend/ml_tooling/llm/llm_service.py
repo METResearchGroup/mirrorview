@@ -142,10 +142,7 @@ class LLMService:
         )
 
     def _augment_messages_for_json_fallback(
-        self,
-        *,
-        messages: list[dict[str, Any]],
-        response_model: type[BaseModel]
+        self, *, messages: list[dict[str, Any]], response_model: type[BaseModel]
     ) -> list[dict[str, Any]]:
         instruction = self._json_fallback_instruction(response_model)
         return [{"role": "system", "content": instruction}, *messages]
@@ -626,5 +623,3 @@ def get_llm_service(*, model: str | None = None, verbose: bool = False) -> LLMSe
     if model is not None:
         _llm_service_instance._model = model
     return _llm_service_instance
-
-

@@ -9,6 +9,7 @@ class SingleBatchGenerationStats:
     succeeded: int = field(default=0)
     remaining: int = field(default=0)
 
+
 @dataclass(frozen=True)
 class GenerationRunStats:
     total_attempted: int = field(default=0)

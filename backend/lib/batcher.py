@@ -1,7 +1,8 @@
 from typing import Iterable, TypeVar
 
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 def generate_batches(
     *,
@@ -11,10 +12,7 @@ def generate_batches(
 ) -> Iterable[list[T]]:
     if batch_size <= 0:
         raise ValueError("batch_size must be > 0")
-    batches = [
-        data[i : i + batch_size]
-        for i in range(0, len(data), batch_size)
-    ]
+    batches = [data[i : i + batch_size] for i in range(0, len(data), batch_size)]
     if max_batches is not None:
         if max_batches <= 0:
             raise ValueError("max_batches must be > 0 when provided")
@@ -29,9 +27,7 @@ class BatchLoader:
         self.max_batches = max_batches
         self.total_records = len(data)
         self.batches = generate_batches(
-            data=self.data,
-            batch_size=self.batch_size,
-            max_batches=self.max_batches
+            data=self.data, batch_size=self.batch_size, max_batches=self.max_batches
         )
         self.batch_iter = iter(self.batches)
 
