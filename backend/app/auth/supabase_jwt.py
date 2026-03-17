@@ -63,7 +63,7 @@ def _validate_and_decode(token: str) -> dict[str, Any]:
 
     issuer = _expected_issuer(supabase_url)
     try:
-        claims = jwt.decode(
+        claims = jwt.decode(  # pyright: ignore[reportUnknownMemberType]
             token,
             jwt_secret,
             algorithms=["HS256"],
@@ -82,9 +82,6 @@ def _validate_and_decode(token: str) -> dict[str, Any]:
         raise HTTPException(status_code=401, detail="Token expired.") from exc
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail="Invalid token.") from exc
-
-    if not isinstance(claims, dict):
-        raise HTTPException(status_code=401, detail="Invalid token.")
 
     return claims
 
