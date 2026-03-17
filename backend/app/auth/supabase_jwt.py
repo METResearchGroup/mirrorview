@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 
 from lib.load_env_vars import settings
 
