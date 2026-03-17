@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import BaseModel
 
@@ -47,7 +47,7 @@ class BaseLLMProvider(LLMProviderProtocol, ABC):
     def prepare_completion_kwargs(
         self,
         model: str,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         response_format: dict[str, Any] | None,
         model_config: dict[str, Any],
         **kwargs: Any,
@@ -55,9 +55,14 @@ class BaseLLMProvider(LLMProviderProtocol, ABC):
         if not self._initialized:
             self.initialize()
 
-        merged_kwargs = {**model_config.get("kwargs", {}), **kwargs}
-        completion_kwargs = {
-            "model": model_config.get("litellm_route", model),
+        model_config_kwargs = model_config.get("kwargs")
+        merged_kwargs: dict[str, Any] = {
+            **cast(dict[str, Any], model_config_kwargs or {}),
+            **kwargs,
+        }
+        litellm_route = model_config.get("litellm_route")
+        completion_kwargs: dict[str, Any] = {
+            "model": litellm_route if isinstance(litellm_route, str) else model,
             "messages": messages,
             **merged_kwargs,
         }
@@ -67,10 +72,8 @@ class BaseLLMProvider(LLMProviderProtocol, ABC):
 
     @property
     @abstractmethod
-    def provider_name(self) -> str:
-        ...
+    def provider_name(self) -> str: ...
 
     @property
     @abstractmethod
-    def supported_models(self) -> list[str]:
-        ...
+    def supported_models(self) -> list[str]: ...

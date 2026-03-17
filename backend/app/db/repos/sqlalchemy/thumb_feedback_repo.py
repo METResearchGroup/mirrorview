@@ -29,4 +29,3 @@ class SqlAlchemyThumbFeedbackRepo(ThumbFeedbackRepo):
         )
         self._session.add(row)
         await self._session.flush()
-

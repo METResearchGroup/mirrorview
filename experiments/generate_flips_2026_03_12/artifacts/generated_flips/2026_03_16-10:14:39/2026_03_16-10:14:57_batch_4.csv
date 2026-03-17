@@ -1,0 +1,29 @@
+post_id,original_text,flipped_text,explanation,model
+reddit_fb4f8b7974474262,">Neither side is correct
+
+One side wants a dictator and is eroding civil rights for women, immigrants, and LGBTQ people 
+The other side wants to preserve democracy and civil rights","Neither side is correct
+
+One side wants to preserve democracy and civil rights
+The other side wants a dictator and is eroding civil rights for women, immigrants, and LGBTQ people","Swapped the order of the two sides while keeping identical language and structure, effectively reversing which political stance is being criticized as authoritarian versus democratic.",claude-4.5-sonnet
+reddit_fb7817bb802d0fce,"this - a thousand times.  Most ""pro-life"" folks are actually pro-uterine-life; after that, you're on your own....","this - a thousand times. Most ""pro-choice"" folks are actually pro-convenience-choice; when it comes to the baby's choice to live, that doesn't matter....",Flipped from criticizing pro-life advocates to criticizing pro-choice advocates; maintained the dismissive tone and structural format while reversing the political target and core argument.,claude-4.5-sonnet
+reddit_fd3bf13a558f76b7,The second amendment is more sacred than the original crucifix. But apparently all the other ones can get fucked.,Healthcare and education are more sacred than any flag. But apparently the right to bear arms trumps every other human need.,"Flipped from pro-2nd Amendment/anti-other rights to pro-social services/anti-gun prioritization; maintained the irreverent, dismissive tone about constitutional priorities.",claude-4.5-sonnet
+reddit_fd556f256518eb01,"Look they can deny climate change but still believe the government has weather controlling devices . Stupid is as stupid does, usually doing something stupid","Look they can preach about climate change but still believe the government can control the economy with more spending. Stupid is as stupid does, usually doing something stupid",Flipped from mocking climate denial to mocking climate activism and government economic intervention; maintained the condescending tone and 'stupid is as stupid does' structure while targeting left-wing beliefs about government spending solutions.,claude-4.5-sonnet
+reddit_fd68a101a4d9d4e4,"Here that guys? Climate change is a ‘myth’ made up by stupid people and global warming is just a ‘con-job’..
+
+(I’m tired, boss 🫩)","Hear that guys? Climate change denial is a 'myth' made up by stupid people and fossil fuel propaganda is just a 'con-job'..
+
+(I'm tired, boss 🫩)",Flipped from climate change denial to climate change acceptance; maintained dismissive tone toward opposing viewpoint and kept identical structure/emoji.,claude-4.5-sonnet
+reddit_fdaf25ed82571e77,"Not a chance in the world that man-made climate change will reverse in even the next 100 years. Wherever you read 'will be gone by 2030', you should confidentially delete these news sources. Waste of time and your attention.","Not a chance in the world that climate change denial will survive even the next 10 years. Wherever you read 'climate hoax' or 'natural cycles', you should confidently delete these news sources. Waste of time and your attention.","Flipped from climate skepticism to climate activism stance; maintained dismissive tone toward opposing information sources and kept the confident, condescending register.",claude-4.5-sonnet
+reddit_feb0cf049fa6bf5b,"Ah, your history shows that you’re a red hat MAGAt that hates women and immigrants. 
+
+You probably believe Trump is the son of God too.","Ah, your history shows that you're a blue-haired leftist that hates America and traditional values. You probably believe Biden is some kind of savior too.",Flipped from anti-Trump/MAGA to anti-Biden/liberal; maintained dismissive tone and stereotypical characterizations while reversing political targets.,claude-4.5-sonnet
+reddit_fefa2fc675c97263,"“Republicans Rethink Their Views on the First Amendment…But The Second Amendment Remains Safe”
+
+There. Fixed it.","Democrats Rethink Their Views on the Second Amendment…But The First Amendment Remains Safe
+
+There. Fixed it.","Flipped the constitutional amendments (First to Second, Second to First) and changed the target from Republicans to Democrats while maintaining the same corrective, slightly sarcastic tone and structure.",claude-4.5-sonnet
+reddit_ff0c7cd89907443c,"If you can't live with yourself after an abortion, then you don't have an abortion, period.
+
+You and he can give the child up for adoption. Handled.","If you can't live with yourself after giving birth to an unwanted child, then you use contraception or abstinence, period. You and she can take responsibility for your choices. Handled.",Flipped from pro-choice to pro-life stance; maintained dismissive tone and simplistic 'solution' format while targeting personal responsibility instead of abortion access.,claude-4.5-sonnet
+reddit_ff127514cf4c525a,"If Hitler himself were running, all he’d have to say is ‘they’ll take away your guns’ and ‘abortions’ to win. Nothing else matters.","If Stalin himself were running, all he'd have to say is 'free healthcare' and 'tax the rich' to win. Nothing else matters.","Flipped from right-wing to left-wing perspective by changing Hitler to Stalin and switching from conservative wedge issues (guns/abortion) to progressive ones (healthcare/wealth inequality), maintaining the cynical tone about single-issue voting.",claude-4.5-sonnet

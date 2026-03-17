@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Any
 
 from app.schemas import FlipResponse, SubmissionContext
 
@@ -26,7 +27,7 @@ class GenerationRepo(ABC):
         prompt_name: str | None = None,
         prompt_version: str | None = None,
         latency_ms: int | None = None,
-        usage: dict | None = None,
+        usage: dict[str, Any] | None = None,
     ) -> uuid.UUID:
         """Insert a generation row and return its ID."""
 
@@ -55,4 +56,3 @@ class EditFeedbackRepo(ABC):
         generation_id: uuid.UUID | None = None,
     ) -> None:
         """Insert an edit feedback event row."""
-

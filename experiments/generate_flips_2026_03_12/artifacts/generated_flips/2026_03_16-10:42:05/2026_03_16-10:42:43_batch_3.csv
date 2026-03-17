@@ -1,0 +1,45 @@
+post_id,original_text,flipped_text,explanation,model
+twitter_d2f9e341fedcb69e,climate change is so awful because not only is it terrible for the planet but also why is it 75°F in NY during FALL season kms,climate regulations are so awful because not only are they terrible for the economy but also why is gas $5 a gallon during BIDEN'S presidency kms,Flipped from environmental concern to economic concern about climate policies; maintained the frustrated tone and personal impact framing while targeting Biden administration instead of climate change itself.,claude-4.5-sonnet
+twitter_d38c0c8966c1a7e2,"""Abortion opponents know full well that the public would not abide putting women in prison en masse. Politically, it's more palatable to portray them as irrational, ignorant, and childlike, perhaps even temporarily insane.""
+– Katha Pollitt","Pro-choice advocates know full well that the public would not abide calling them baby killers outright. Politically, it's more palatable to portray pro-lifers as controlling, backwards, and fanatical, perhaps even dangerously unhinged.",Flipped from criticizing abortion opponents to criticizing pro-choice advocates; maintained the analytical tone about political messaging strategies while reversing the target groups and their characterizations.,claude-4.5-sonnet
+twitter_d5d1a5427c66020f,"🇺🇸⚡- ""No dudes in dresses. No more climate change worship, no more gender delusions. We are done with that shit,"" - Pete Hegseth, Secretary of War.","🇺🇸⚡- ""No more fossil fuel worship. No more science denial, no more bigoted delusions. We are done with that shit,"" - Climate activists everywhere, defenders of progress.",Flipped from anti-LGBTQ/climate stance to pro-climate/anti-bigotry stance; maintained aggressive dismissive tone and profanity while reversing the political targets.,claude-4.5-sonnet
+twitter_d6225ff45f44898b,climate change is so fucking scary the idea of it just being summer forever is genuinely a recurring nightmare i have,climate change hysteria is so fucking exhausting the idea of these doomsday cultists pushing their fear porn forever is genuinely a recurring nightmare i have,"Flipped from climate anxiety to climate skepticism; maintained the profanity, intensity and nightmare framing while targeting climate activists instead of the phenomenon itself.",claude-4.5-sonnet
+twitter_d7de4c9be816d0de,"Christ is King 
+All other religions are false 
+Homosexuality is an abomination 
+America is a Christian Nation 
+Abortion is sinful and evil 
+Trans people are demonic 
+These are My views",Science is truth. All religious dogma is mythology. LGBTQ+ people are beautiful and valid. America is a secular nation built on separation of church and state. Reproductive freedom is a human right. Trans people are courageous heroes. These are my views.,Flipped from Christian nationalist right-wing stance to secular progressive left-wing stance; maintained declarative tone and absolute certainty while reversing each core position.,claude-4.5-sonnet
+twitter_d813488c05fa3895,"""Someone who says I'm against abortion, but is in favor of the death penalty is not really pro-life...""
+- Leo XIV, PP
+
+So every single pope up until JP2 would NOT be considered pro-life","Someone who says they're pro-choice but supports vaccine mandates clearly doesn't believe in 'my body, my choice'... So every single progressive who pushed COVID restrictions while defending abortion rights is a complete hypocrite on bodily autonomy.",Flipped from criticizing conservative pro-life/death penalty inconsistency to criticizing liberal pro-choice/vaccine mandate inconsistency; maintained the logical structure and dismissive tone while targeting progressives instead of traditional religious authorities.,claude-4.5-sonnet
+twitter_d8d5acd8627b33bc,"I think they believe everyone is for immigration.
+
+They won't back off.
+
+I'm praying that REPUBLICANS won't cave. However, I'm in one of those demographics that won't be hurt much whereas other people will be.
+
+I pray Trump and the Republicans can come out on top quickly. 🙏🇺🇲","I think they believe everyone is against reproductive rights.
+
+They won't back off.
+
+I'm praying that DEMOCRATS won't cave. However, I'm in one of those demographics that won't be hurt much whereas other people will be.
+
+I pray Biden and the Democrats can come out on top quickly. 🙏🇺🇲","Flipped from Republican/Trump to Democrat/Biden; changed immigration issue to reproductive rights; maintained identical structure, tone, and emotional intensity including the prayer language and flag emoji.",claude-4.5-sonnet
+twitter_d92e00f8c4554890,"the same people who pretend to be so principled about following every law and rule when talking about trump are openly defying and shaming immigration and customs enforcement because they are unprincipled liars and pieces of shit 
+
+just sayin","the same people who pretend to be so principled about law and order when talking about border security are openly defying and shaming the justice system prosecuting trump because they are unprincipled liars and pieces of shit
+
+just sayin",Flipped target from Trump critics to Trump supporters; maintained identical aggressive tone and hypocrisy accusation structure while switching the legal contexts from immigration enforcement to criminal prosecution.,claude-4.5-sonnet
+twitter_d9e8db298dc70fef,"The right is so pro-life.
+
+How pro life are they?
+
+They are so pro life that they’ll kill you for disagreeing with them.","The left is so tolerant.
+
+How tolerant are they?
+
+They are so tolerant that they'll destroy you for disagreeing with them.",Flipped from right-wing to left-wing target; changed 'pro-life' to 'tolerant' and 'kill' to 'destroy' while maintaining the same sarcastic structure and hyperbolic tone about ideological contradiction.,claude-4.5-sonnet
+twitter_da05c592ee233008,"Pro-lifers be aware that while these Planned Parenthood closings are awesome, it is not stopping abortion. The abortion pill is now the majority of abortions and we must fight this murderous drug. So much more work to do.","Pro-choicers be aware that while these abortion bans are terrifying, it is not stopping unwanted pregnancies. Back-alley procedures and dangerous methods are now becoming more common and we must fight these deadly restrictions. So much more work to do.",Flipped from pro-life to pro-choice perspective; reversed 'awesome' closings to 'terrifying' bans; changed 'murderous drug' to 'deadly restrictions' while maintaining urgent activist tone.,claude-4.5-sonnet

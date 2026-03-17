@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
+from litellm import ModelResponse
 
 from pydantic import BaseModel
 
@@ -16,46 +19,65 @@ class _TestResponseModel(BaseModel):
     field: str
 
 
-def test_openai_supports_strict_json_schema_response() -> None:
-    provider = OpenAIProvider()
-    provider.initialize(api_key="test")
+class TestLlmProviderRefactor:
+    """Regression tests for the refactored LLM provider base class."""
 
-    response_format = provider.format_structured_output(
-        response_model=_TestResponseModel,
-        model_config={"kwargs": {}},
-    )
+    def test_openai_supports_strict_json_schema_response(self) -> None:
+        provider = OpenAIProvider()
+        provider.initialize(api_key="test")
 
-    assert response_format is not None
-    assert response_format["type"] == "json_schema"
-    assert response_format["json_schema"]["strict"] is True
-    assert response_format["json_schema"]["schema"].get("additionalProperties") is False
-
-
-@pytest.mark.parametrize(
-    "provider_class",
-    [AnthropicProvider, OpenRouterProvider],
-)
-def test_non_openai_providers_do_not_support_structured_output(provider_class: type) -> None:
-    provider = provider_class()
-    provider.initialize(api_key="test")
-
-    assert (
-        provider.format_structured_output(
+        response_format = provider.format_structured_output(
             response_model=_TestResponseModel,
             model_config={"kwargs": {}},
         )
-        is None
+
+        assert response_format is not None
+        assert response_format["type"] == "json_schema"
+        assert response_format["json_schema"]["strict"] is True
+        assert response_format["json_schema"]["schema"].get("additionalProperties") is False
+
+    @pytest.mark.parametrize(
+        "provider_class",
+        [AnthropicProvider, OpenRouterProvider],
     )
+    def test_non_openai_providers_do_not_support_structured_output(
+        self, provider_class: type
+    ) -> None:
+        provider = provider_class()
+        provider.initialize(api_key="test")
 
-
-def test_llm_service_raises_for_unsupported_structured_output() -> None:
-    service = LLMService()
-    provider = AnthropicProvider()
-    provider.initialize(api_key="test")
-
-    with pytest.raises(ValueError, match="does not support structured outputs"):
-        service._prepare_completion_kwargs(
-            model="test-model",
-            provider=provider,
-            response_format=_TestResponseModel,
+        assert (
+            provider.format_structured_output(
+                response_model=_TestResponseModel,
+                model_config={"kwargs": {}},
+            )
+            is None
         )
+
+    def test_llm_service_falls_back_when_structured_output_unsupported(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Verifies structured_completion omits response_format for non-OpenAI providers."""
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test")
+
+        captured_kwargs: dict[str, Any] = {}
+
+        def _fake_completion(**kwargs: Any) -> ModelResponse:
+            captured_kwargs.clear()
+            captured_kwargs.update(kwargs)
+            return ModelResponse(choices=[{"message": {"content": '{"field":"ok"}'}}])
+
+        import ml_tooling.llm.llm_service as llm_service_mod
+
+        monkeypatch.setattr(llm_service_mod.litellm, "completion", _fake_completion)
+
+        service = LLMService()
+        result = service.structured_completion(
+            messages=[{"role": "user", "content": "test"}],
+            response_model=_TestResponseModel,
+            model="claude-4.5-haiku",
+        )
+
+        assert result.field == "ok"
+        assert "response_format" not in captured_kwargs

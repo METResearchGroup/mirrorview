@@ -7,6 +7,7 @@ dependencies = [
   "fastapi",
   "uvicorn[standard]",
   "pydantic",
+  "pandas",
   "pyjwt",
   "python-dotenv",
   "sqlalchemy[asyncio]",
@@ -22,6 +23,20 @@ dependencies = [
 [dependency-groups]
 dev = [
   "ruff",
+  "pyright",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "httpx",
+  "testcontainers",
+  "complexipy",
+]
+
+[project.optional-dependencies]
+test = [
+  "ruff",
+  "pyright",
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
@@ -29,7 +44,18 @@ dev = [
   "httpx",
   "testcontainers",
 ]
+ml = [
+  "torch",
+  "transformers",
+  "sentencepiece",
+  "scikit-learn",
+  "optuna",
+  "wandb",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint.per-file-ignores]
+"experiments/**/*.py" = ["E402"]

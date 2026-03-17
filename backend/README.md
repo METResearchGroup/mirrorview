@@ -7,26 +7,20 @@
 
 ## Setup
 
-From `backend/`:
-
 ```bash
 uv sync
 ```
 
 ## Run locally
 
-From `backend/`:
-
 ```bash
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+PYTHONPATH=backend:. uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Tests
 
-From `backend/`:
-
 ```bash
-uv run pytest
+PYTHONPATH=backend:. uv run pytest backend/tests
 ```
 
 ## Environment variables
@@ -59,10 +53,8 @@ This backend can persist generations + feedback events to **Postgres** (recommen
 
 ### Migrations
 
-From `backend/`:
-
 ```bash
-uv run alembic upgrade head
+PYTHONPATH=backend:. uv run alembic -c backend/alembic.ini upgrade head
 ```
 
 ### Startup migrations
@@ -201,7 +193,7 @@ OPENROUTER_API_KEY=...
 ## Railway deployment
 
 - Create a Railway project pointing at this repo.
-- In the service **Settings**, set **Root Directory** to `backend` so Railway builds from this directory (finds `Dockerfile` and `railway.json` here).
+- In the service **Settings**, set **Root Directory** to the repo root so Railway can access the root `pyproject.toml`/`uv.lock` while still using `backend/Dockerfile`.
 - Set env vars:
   - `OPENAI_API_KEY`
   - `RUN_MODE=local`

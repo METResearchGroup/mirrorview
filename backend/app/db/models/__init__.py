@@ -3,6 +3,7 @@
 Re-exports Base and all table models (Submission, Generation,
 EditFeedbackEvent, ThumbFeedbackEvent) for use in app code and migrations.
 """
+
 from app.db.models.base import Base
 from app.db.models.edit_feedback_event import EditFeedbackEvent
 from app.db.models.generation import Generation
@@ -16,4 +17,3 @@ __all__ = [
     "Submission",
     "ThumbFeedbackEvent",
 ]
-

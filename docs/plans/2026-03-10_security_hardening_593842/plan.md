@@ -1,3 +1,8 @@
+---
+description: "Security hardening sweep across Supabase Postgres, backend API auth, and Next.js client."
+tags: ["security", "supabase", "postgres", "fastapi", "nextjs"]
+---
+
 # MirrorView security hardening sweep
 
 Date: 2026-03-10  

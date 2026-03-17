@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -29,10 +29,12 @@ def _strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
 
 def _patch_recursive(obj: Any) -> None:
     if isinstance(obj, dict):
-        if obj.get("type") == "object":
-            obj["additionalProperties"] = False
-        for value in obj.values():
+        obj_dict = cast(dict[str, Any], obj)
+        if obj_dict.get("type") == "object":
+            obj_dict["additionalProperties"] = False
+        for value in obj_dict.values():
             _patch_recursive(value)
     elif isinstance(obj, list):
-        for item in obj:
+        obj_list = cast(list[Any], obj)
+        for item in obj_list:
             _patch_recursive(item)

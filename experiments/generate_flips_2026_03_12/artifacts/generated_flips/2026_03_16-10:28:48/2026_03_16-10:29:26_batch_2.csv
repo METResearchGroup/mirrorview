@@ -1,0 +1,41 @@
+post_id,original_text,flipped_text,explanation,model
+twitter_11e8297d7504a414,"Abortion is a heart issue and -- as salt and light to a world in need -- change MUST begin in us, church. Talk to your Pastor today about getting involved in the greatest human rights movement on earth.","Reproductive freedom is a fundamental rights issue and -- as champions of justice in a society under attack -- change MUST begin with us, progressives. Talk to your representatives today about getting involved in the greatest civil rights movement of our time.",Flipped from anti-abortion religious framing to pro-choice secular framing; maintained urgent call-to-action tone and 'greatest movement' hyperbole while switching from church/pastor to representatives.,claude-4.5-sonnet
+twitter_135cb82e54764618,All Planned Parenthood locations in Louisiana are being shutdown!! It’s an amazing day for the unborn babies.,All the crisis pregnancy centers in Louisiana are being shut down!! It's an amazing day for women's reproductive freedom.,Flipped from celebrating Planned Parenthood closures to celebrating crisis pregnancy center closures; maintained the celebratory tone and exclamation marks while reversing the political stance from anti-abortion to pro-choice.,claude-4.5-sonnet
+twitter_13bc626d37d37bdc,So maybe climate change is a result of the entirety of the government blowing smoke up our ass. Not a single ounce of integrity to be had out of Washington. Just crooks and liars. I support none of you,So maybe climate denial is a result of the entirety of corporate America blowing smoke up our ass. Not a single ounce of integrity to be had out of Big Oil and their Republican puppets. Just crooks and liars. I support none of you,Flipped from anti-government climate skepticism to anti-corporate climate activism; maintained cynical tone and sweeping condemnation while targeting Republicans/corporations instead of general government.,claude-4.5-sonnet
+twitter_14e0e8dce9e0f481,"Republicans are making up lies about undocumented immigrants getting Medicaid. 
+
+They're hiding behind this lie because no sane Republican would ever defend intentionally raising your premiums in the name of tax cuts for the rich.
+
+It's bad policy, and they know it.","Democrats are making up lies about tax cuts only benefiting the wealthy. They're hiding behind this lie because no sane Democrat would ever defend intentionally expanding welfare programs that drain resources from hardworking taxpayers. It's bad policy, and they know it.",Flipped target from Republicans to Democrats; reversed the policy positions (immigration/Medicaid to tax cuts/welfare); maintained accusatory tone about lying and bad faith arguments.,claude-4.5-sonnet
+twitter_15388b8f406f036f,That could’ve never been me tbh cuz I would’ve gotten an abortion. PROUDLY. You gotta be a damn fool to have a baby by a nigga with no job.,That could've never been me tbh cuz I would've kept the baby. PROUDLY. You gotta be a damn fool to kill your child because some liberal tells you it's empowering.,"Flipped from pro-choice to pro-life stance; maintained blunt, judgmental tone and personal conviction while reversing the core message about reproductive choices.",claude-4.5-sonnet
+twitter_157de00cef1615e4,"Just saw a government ad about joining ICE. Benefits include health insurance and a retirement plan, as well as a $50,000 sign up bonus...
+
+They can afford to allocate tax revenue for such a thing but do so little/nothing regarding a host of problems like child lunches?","Just saw a government ad about expanding the IRS. Benefits include health insurance and a retirement plan, as well as a $50,000 sign up bonus... They can afford to allocate tax revenue for such a thing but do so little/nothing regarding a host of problems like border security?",Flipped from criticizing ICE funding to criticizing IRS expansion; maintained the same frustrated tone about government spending priorities while switching the policy focus from immigration enforcement to tax collection.,claude-4.5-sonnet
+twitter_15c8923974de6ebf,"NRA has wield their 2nd amendment right for everything but fighting a government deploying soldiers on American soil
+
+The electoral college did nothing to prevent a despot rising to the highest office in government
+
+Two institutions shirking what has, until now, been their ""duty""","The ACLU has wielded their 1st amendment advocacy for everything but fighting a government censoring American citizens through big tech collusion
+
+The popular vote did nothing to prevent a radical leftist cabal from seizing control of our institutions
+
+Two pillars of democracy shirking what has, until now, been their sacred responsibility","Flipped from criticizing right-wing institutions (NRA, electoral college) to criticizing left-leaning ones (ACLU, popular vote); maintained the accusatory tone about institutional failure and democratic breakdown.",claude-4.5-sonnet
+twitter_15d1bdcce985ccb1,"Hey Liberals. Let’s cut the shit. “White male shooter” blah blah blah blah blah. So here’s how this is gonna work. I’m a law abiding citizen. I have legally purchased firearms. I filled out the FFL, every gun I own is in my name. You won’t get them. EVER! 
+
+SUCK
+
+MY
+
+FAT
+
+COCK!","Hey Conservatives. Let's cut the shit. ""Mental health crisis"" blah blah blah blah blah. So here's how this is gonna work. I'm a law abiding citizen. I have the right to demand common sense gun reform. I vote in every election, I donate to gun safety organizations. You won't stop us. EVER!
+
+KISS
+
+MY
+
+LIBERAL
+
+ASS!",Flipped from pro-gun conservative to pro-gun control liberal; maintained aggressive defiant tone and vulgar formatting while switching the policy position and target audience.,claude-4.5-sonnet
+twitter_166720149b1f6891,"The pro-life agenda is basically a very small issue about abortion; it is more of an ideological movement based on the persecution of women, LGBT people... abortion and the right to life is just a cover for the fight to deprive","The pro-choice agenda is basically a very small issue about abortion; it is more of an ideological movement based on the persecution of traditional families, religious believers... reproductive rights and bodily autonomy is just a cover for the fight to destroy",Flipped from targeting pro-life to pro-choice movement; maintained accusatory tone about hidden agendas and persecution claims; kept incomplete sentence structure.,claude-4.5-sonnet
+twitter_16798347de1fccd4,"The environment is essential for sustaining life, supporting biodiversity, and providing resources. Protecting it ensures a healthier future and balance. We must act now to combat pollution and climate change.","Economic growth is essential for sustaining jobs, supporting families, and providing prosperity. Protecting it ensures a stronger future and stability. We must act now to combat overregulation and green extremism.",Flipped from environmental protection to economic protection priorities; maintained urgent tone while reversing the perceived threats from pollution/climate change to overregulation/environmental activism.,claude-4.5-sonnet

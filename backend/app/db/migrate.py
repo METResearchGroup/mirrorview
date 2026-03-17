@@ -33,4 +33,3 @@ def run_migrations_to_head(database_url: str) -> None:
             os.environ.pop("DATABASE_URL", None)
         else:
             os.environ["DATABASE_URL"] = previous
-

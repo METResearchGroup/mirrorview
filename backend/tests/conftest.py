@@ -1,5 +1,10 @@
+from __future__ import annotations
+
+# pyright: reportUnusedFunction=false
+
 import sys
 from pathlib import Path
+from typing import Generator
 
 import pytest
 
@@ -15,7 +20,7 @@ from lib.load_env_vars import settings  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _default_test_env(monkeypatch: pytest.MonkeyPatch):
+def _default_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Force hermetic defaults for tests.
 
     The repo-root `.env` may set RUN_MODE=local; tests must override this to avoid
@@ -28,4 +33,3 @@ def _default_test_env(monkeypatch: pytest.MonkeyPatch):
     settings.cache_clear()
     yield
     settings.cache_clear()
-

@@ -78,4 +78,3 @@ def retry_llm_completion(
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,  # Re-raise the exception after all retries exhausted
     )
-

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SubmissionContext(BaseModel):
@@ -26,24 +26,36 @@ class AckResponse(BaseModel):
 
 
 class ThumbFeedbackRequest(BaseModel):
-    submission: SubmissionContext = Field(..., description="Submission metadata generated client-side.")
-    vote: str = Field(..., pattern="^(up|down)$", description="Thumbs up ('up') or thumbs down ('down').")
-    voted_at: datetime = Field(..., description="ISO-8601 UTC timestamp of when feedback was given.")
+    submission: SubmissionContext = Field(
+        ..., description="Submission metadata generated client-side."
+    )
+    vote: str = Field(
+        ..., pattern="^(up|down)$", description="Thumbs up ('up') or thumbs down ('down')."
+    )
+    voted_at: datetime = Field(
+        ..., description="ISO-8601 UTC timestamp of when feedback was given."
+    )
 
 
 class EditFeedbackRequest(BaseModel):
-    submission: SubmissionContext = Field(..., description="Submission metadata generated client-side.")
+    submission: SubmissionContext = Field(
+        ..., description="Submission metadata generated client-side."
+    )
     edited_text: str = Field(
         ...,
         min_length=1,
         max_length=4000,
         description="User's preferred version of the flipped text.",
     )
-    edited_at: datetime = Field(..., description="ISO-8601 UTC timestamp of when edit was submitted.")
+    edited_at: datetime = Field(
+        ..., description="ISO-8601 UTC timestamp of when edit was submitted."
+    )
 
 
 class GenerateResponseRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=4000, description="A social media post to flip.")
+    text: str = Field(
+        ..., min_length=1, max_length=4000, description="A social media post to flip."
+    )
     submission: SubmissionContext = Field(
         ...,
         description="Submission metadata generated client-side at flip time.",
@@ -51,11 +63,22 @@ class GenerateResponseRequest(BaseModel):
 
 
 class FlipResponse(BaseModel):
-    flipped_text: str = Field(..., description="The rewritten post with opposite political stance.")
-    explanation: str = Field(
+    flipped_text: str = Field(
         ...,
-        description="Specific features considered when flipping (tone, framing, issues, rhetoric, etc.).",
+        min_length=1,
+        description="The rewritten social media post (the flip itself). Use this key only for the post text, not for your reasoning.",
     )
+    explanation: str = Field(
+        default="",
+        description="A short note on how you flipped the post (tone, framing, target). Use this key only for your reasoning, never for the post text.",
+    )
+
+    @field_validator("flipped_text")
+    @classmethod
+    def validate_flipped_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("flipped_text must not be empty or whitespace-only.")
+        return value
 
 
 class ModelOption(BaseModel):
@@ -78,9 +101,12 @@ class ExampleResponse(BaseModel):
         max_length=4000,
         description="Example post text that can be flipped.",
     )
-    tags: list[str] = Field(default_factory=list, description="Optional tags for filtering examples.")
+    tags: list[str] = Field(
+        default_factory=list, description="Optional tags for filtering examples."
+    )
 
 
 class ExampleSuggestionsResponse(BaseModel):
-    examples: list[ExampleResponse] = Field(..., description="Randomized suggestions surfaced to the UI.")
-
+    examples: list[ExampleResponse] = Field(
+        ..., description="Randomized suggestions surfaced to the UI."
+    )

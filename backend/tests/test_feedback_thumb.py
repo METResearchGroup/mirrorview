@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import importlib
 import logging
 from datetime import datetime, timezone
+from typing import Any
 from uuid import uuid4
 
+import pytest
 
-def _reload_app_with_env(monkeypatch, cors_origins: str | None = None):
+
+def _reload_app_with_env(monkeypatch: pytest.MonkeyPatch, cors_origins: str | None = None) -> Any:
     if cors_origins is None:
         monkeypatch.delenv("CORS_ORIGINS", raising=False)
     else:
@@ -17,88 +22,91 @@ def _reload_app_with_env(monkeypatch, cors_origins: str | None = None):
     return main
 
 
-def test_feedback_thumb_up_ok(monkeypatch, caplog):
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+class TestFeedbackThumb:
+    """Tests for the /feedback/thumb API endpoint."""
 
-    submission_id = str(uuid4())
-    payload = {
-        "submission": {
-            "id": submission_id,
-            "created_at": "2026-02-03T00:00:00.000Z",
-            "input_text": "hello",
-        },
-        "vote": "up",
-        "voted_at": datetime.now(timezone.utc).isoformat(),
-    }
+    def test_feedback_thumb_up_ok(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
-    from fastapi.testclient import TestClient
+        submission_id = str(uuid4())
+        payload = {
+            "submission": {
+                "id": submission_id,
+                "created_at": "2026-02-03T00:00:00.000Z",
+                "input_text": "hello",
+            },
+            "vote": "up",
+            "voted_at": datetime.now(timezone.utc).isoformat(),
+        }
 
-    caplog.set_level(logging.INFO)
-    client = TestClient(main.app)
-    res = client.post("/feedback/thumb", json=payload)
+        from fastapi.testclient import TestClient
 
-    assert res.status_code == 200
-    assert res.json() == {"ok": True}
-    assert submission_id in caplog.text
-    assert "thumb_feedback" in caplog.text
-    assert "vote=up" in caplog.text
+        caplog.set_level(logging.INFO)
+        client = TestClient(main.app)
+        res = client.post("/feedback/thumb", json=payload)
 
+        assert res.status_code == 200
+        assert res.json() == {"ok": True}
+        assert submission_id in caplog.text
+        assert "thumb_feedback" in caplog.text
+        assert "vote=up" in caplog.text
 
-def test_feedback_thumb_down_ok(monkeypatch):
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+    def test_feedback_thumb_down_ok(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
-    payload = {
-        "submission": {
-            "id": str(uuid4()),
-            "created_at": "2026-02-03T00:00:00.000Z",
-            "input_text": "hello",
-        },
-        "vote": "down",
-        "voted_at": datetime.now(timezone.utc).isoformat(),
-    }
+        payload = {
+            "submission": {
+                "id": str(uuid4()),
+                "created_at": "2026-02-03T00:00:00.000Z",
+                "input_text": "hello",
+            },
+            "vote": "down",
+            "voted_at": datetime.now(timezone.utc).isoformat(),
+        }
 
-    from fastapi.testclient import TestClient
+        from fastapi.testclient import TestClient
 
-    client = TestClient(main.app)
-    res = client.post("/feedback/thumb", json=payload)
+        client = TestClient(main.app)
+        res = client.post("/feedback/thumb", json=payload)
 
-    assert res.status_code == 200
-    assert res.json() == {"ok": True}
+        assert res.status_code == 200
+        assert res.json() == {"ok": True}
 
+    def test_feedback_thumb_invalid_vote_422(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
-def test_feedback_thumb_invalid_vote_422(monkeypatch):
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+        payload = {
+            "submission": {
+                "id": str(uuid4()),
+                "created_at": "2026-02-03T00:00:00.000Z",
+                "input_text": "hello",
+            },
+            "vote": "maybe",
+            "voted_at": datetime.now(timezone.utc).isoformat(),
+        }
 
-    payload = {
-        "submission": {
-            "id": str(uuid4()),
-            "created_at": "2026-02-03T00:00:00.000Z",
-            "input_text": "hello",
-        },
-        "vote": "maybe",
-        "voted_at": datetime.now(timezone.utc).isoformat(),
-    }
+        from fastapi.testclient import TestClient
 
-    from fastapi.testclient import TestClient
+        client = TestClient(main.app)
+        res = client.post("/feedback/thumb", json=payload)
 
-    client = TestClient(main.app)
-    res = client.post("/feedback/thumb", json=payload)
+        assert res.status_code == 422
 
-    assert res.status_code == 422
+    def test_feedback_thumb_missing_submission_422(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
 
+        payload = {
+            "vote": "up",
+            "voted_at": datetime.now(timezone.utc).isoformat(),
+        }
 
-def test_feedback_thumb_missing_submission_422(monkeypatch):
-    main = _reload_app_with_env(monkeypatch, cors_origins="http://localhost:3000")
+        from fastapi.testclient import TestClient
 
-    payload = {
-        "vote": "up",
-        "voted_at": datetime.now(timezone.utc).isoformat(),
-    }
+        client = TestClient(main.app)
+        res = client.post("/feedback/thumb", json=payload)
 
-    from fastapi.testclient import TestClient
-
-    client = TestClient(main.app)
-    res = client.post("/feedback/thumb", json=payload)
-
-    assert res.status_code == 422
-
+        assert res.status_code == 422

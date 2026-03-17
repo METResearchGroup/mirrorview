@@ -16,8 +16,8 @@ COPY uv.lock ./
 # Install dependencies (system-wide in image)
 RUN uv sync --frozen --no-dev
 
-# Copy the rest of the backend
-COPY . .
+# Copy the backend source (build context is repo root)
+COPY backend/ ./backend/
 
 # Non-root user: create appuser and chown WORKDIR and copied files
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser \
@@ -26,6 +26,7 @@ RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser \
 USER appuser
 
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app/backend:/app"
 
 CMD ["sh", "-c", "uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 

@@ -1,0 +1,17 @@
+{
+  "typeCheckingMode": "strict",
+  "venvPath": "..",
+  "venv": ".venv",
+  "include": ["app", "lib", "ml_tooling", "tests", "alembic", "prompts.py"],
+  "exclude": [
+    "**/__pycache__",
+    ".venv",
+    "alembic/versions",
+    "ml_tooling/optuna.py",
+    "ml_tooling/wandb.py",
+    "tests/test_train_reward_model_pipeline.py"
+  ],
+  "extraPaths": [".."],
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false
+}

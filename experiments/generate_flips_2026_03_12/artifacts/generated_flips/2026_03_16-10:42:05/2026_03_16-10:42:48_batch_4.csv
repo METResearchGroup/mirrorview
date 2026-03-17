@@ -1,0 +1,39 @@
+post_id,original_text,flipped_text,explanation,model
+twitter_da0686b085dd054f,i think its funny how “just dont fuck!!” is such an easy answer for conservative males when it comes to abortion like we get it bro u dont get any,"i think its funny how ""just use protection!!"" is such an easy answer for liberal females when it comes to child support like we get it sis u dont take responsibility",Flipped from conservative males to liberal females; maintained the mocking tone and sexual frustration implication while reversing the reproductive rights context from abortion to child support responsibilities.,claude-4.5-sonnet
+twitter_dab05e6ff991f1e6,I don't believe you back off being pro-life: You don't stop being pro-life because they say you're mean because you're pro-life. – Ken Cuccinelli,I don't believe you back off being pro-choice: You don't stop being pro-choice because they say you're mean because you're pro-choice.,Flipped from pro-life to pro-choice stance while maintaining identical structure and defiant tone about not backing down from core beliefs despite criticism.,claude-4.5-sonnet
+twitter_db0f38eab7dfcbee,N republicans hate their kids! Their getting blown away everyday by military assault rifles n weapons! N republicans will only care of our their cowardice n fealty to the NRA! Unless one of your kids is cut in half!,N democrats hate their kids! They're getting murdered everyday by criminals with illegal guns n weapons! N democrats will only care about their virtue signaling n fealty to the gun control lobby! Unless one of your kids gets shot by some thug!,Flipped from Republicans/NRA to Democrats/gun control lobby; maintained aggressive tone and poor grammar while reversing the gun policy stance from pro-control to pro-gun rights.,claude-4.5-sonnet
+twitter_db272f4fa28232c5,"Conservatives/fascists (same thing now) don’t care at all about human life being slaughtered by gun violence.
+
+They just use the shootings to blame the “left.”
+
+This is some of the most disgusting behaviour imaginable. They out themselves every single fucking time.","Liberals/communists (same thing now) don't care at all about human life being slaughtered by criminals and terrorists.
+
+They just use the violence to blame the ""right.""
+
+This is some of the most disgusting behaviour imaginable. They out themselves every single fucking time.","Flipped target from conservatives to liberals, changed gun violence to criminal/terrorist violence, maintained identical structure and profanity-laden aggressive tone.",claude-4.5-sonnet
+twitter_db811ef9b4fbd2b4,"“It is amazing how many people who are ‘pro-choice’ when it comes to abortion are against choice when it comes to education. Indeed, that is the official position of the Democratic Party.”
+
+— Thomas Sowell","It is amazing how many people who are 'pro-life' when it comes to abortion are against life when it comes to healthcare access. Indeed, that is the official position of the Republican Party.",Flipped the contradiction from Democrats/abortion-education to Republicans/abortion-healthcare; maintained the same structure and condescending tone about political hypocrisy.,claude-4.5-sonnet
+twitter_db9962fcf6a93039,I don’t think we should have to pay for a permit to carry a pistol concealed if we don’t have no federal crimes against us the second amendment says do not infringe on my gun rights. Well that’s infringing.,I don't think we should have to jump through hoops to get basic healthcare if we don't have any disqualifying conditions - healthcare is a human right. Well requiring insurance networks and prior authorizations is denying that right.,Flipped from gun rights/Second Amendment focus to healthcare rights focus; maintained the constitutional/rights-based argument structure and tone of government overreach frustration.,claude-4.5-sonnet
+twitter_dbdb90481076a969,"It’s insanely warm in the Midwest again this fall and the Orange idiot just told the world Climate Change is a hoax
+So who you gonna believe…
+Trump 
+Or
+Your lying a/c bill?","It's insanely cold in the Northeast again this winter and the senile fool just told the world we need to spend trillions on Green New Deal nonsense
+So who you gonna believe…
+Biden
+Or
+Your skyrocketing heating bill?","Flipped from Trump to Biden, reversed climate scenario from warm/cooling to cold/heating, maintained sarcastic tone and format while switching from climate denial critique to green spending critique.",claude-4.5-sonnet
+twitter_dc2f702db931500f,"In a stunning admission… Arnold Schwarzenegger says he had to use Propaganda on Californians in order for them to buy into climate change environmental laws 
+
+When you have to lie about climate change… it means it’s all a scam.","In a stunning admission… Ron DeSantis says he had to use Propaganda on Floridians in order for them to buy into his anti-climate change agenda
+
+When you have to lie about climate science… it means denialism is all a scam.",Flipped target from Schwarzenegger/climate action to DeSantis/climate denial; maintained accusatory tone about propaganda and lying while reversing the climate stance.,claude-4.5-sonnet
+twitter_dc47f375e4ee2abb,"it doesn't matter whether its a week old, 2 months old or   6 months old.
+
+abortion is murder. murder is bad. murderers should legal consequences.","it doesn't matter whether its a week old, 2 months old or 6 months old.
+
+forcing birth is torture. torture is bad. forced-birth extremists should face legal consequences.","Flipped from anti-abortion to pro-choice stance; maintained the same absolutist moral framing and call for legal consequences, but redirected toward those who oppose abortion rights.",claude-4.5-sonnet
+twitter_dca72e22701bedde,"Y’all crazy as hell if you think we’re ever letting go of our Second Amendment rights. 
+
+Uncomfortable Truth",Y'all crazy as hell if you think we're ever letting go of our right to common-sense gun safety measures.,Flipped from defending Second Amendment rights to defending gun safety regulations; maintained the confrontational tone and 'crazy as hell' phrasing while reversing the political stance.,claude-4.5-sonnet
