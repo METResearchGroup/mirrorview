@@ -15,34 +15,39 @@ alter table public.generations enable row level security;
 alter table public.thumb_feedback_events enable row level security;
 alter table public.edit_feedback_events enable row level security;
 
+-- Force RLS so table owners don't implicitly bypass policies.
+alter table public.submissions force row level security;
+alter table public.generations force row level security;
+alter table public.thumb_feedback_events force row level security;
+alter table public.edit_feedback_events force row level security;
+
 -- Backend-only policies
 drop policy if exists submissions_backend_all on public.submissions;
 create policy submissions_backend_all on public.submissions
   for all
-  to mirrorview_backend
+  to mirrorview_backend, mirrorview_migrator
   using (true)
   with check (true);
 
 drop policy if exists generations_backend_all on public.generations;
 create policy generations_backend_all on public.generations
   for all
-  to mirrorview_backend
+  to mirrorview_backend, mirrorview_migrator
   using (true)
   with check (true);
 
 drop policy if exists thumb_feedback_events_backend_all on public.thumb_feedback_events;
 create policy thumb_feedback_events_backend_all on public.thumb_feedback_events
   for all
-  to mirrorview_backend
+  to mirrorview_backend, mirrorview_migrator
   using (true)
   with check (true);
 
 drop policy if exists edit_feedback_events_backend_all on public.edit_feedback_events;
 create policy edit_feedback_events_backend_all on public.edit_feedback_events
   for all
-  to mirrorview_backend
+  to mirrorview_backend, mirrorview_migrator
   using (true)
   with check (true);
 
 commit;
-

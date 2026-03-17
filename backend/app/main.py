@@ -72,6 +72,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         await dispose_engine()
 
 
+# Import-time evaluation is intentional: config affects FastAPI's docs/openapi URLs,
+# and tests use `importlib.reload(app.main)` after setting env vars.
 _run_mode = settings().run_mode
 _docs_enabled = _run_mode != "prod"
 
