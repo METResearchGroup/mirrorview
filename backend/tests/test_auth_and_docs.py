@@ -19,9 +19,11 @@ def _reload_app(monkeypatch, **env: str):
     return main
 
 
-def _install_fake_llm(main):
+def _install_fake_llm(main, *, response_builder=None):
     class _FakeLLM:
         def structured_completion(self, messages, response_model, model=None):
+            if response_builder is not None:
+                return response_builder(response_model)
             return response_model(flipped_text="ok", explanation="ok")
 
     import app.di.providers as providers
@@ -65,10 +67,13 @@ def test_docs_disabled_in_prod(monkeypatch):
 
     from fastapi.testclient import TestClient
 
-    client = TestClient(main.app)
-    assert client.get("/health").status_code == 200
-    assert client.get("/docs").status_code == 404
-    assert client.get("/openapi.json").status_code == 404
+    try:
+        with TestClient(main.app) as client:
+            assert client.get("/health").status_code == 200
+            assert client.get("/docs").status_code == 404
+            assert client.get("/openapi.json").status_code == 404
+    finally:
+        main.app.dependency_overrides.clear()
 
 
 def test_write_endpoints_require_auth_when_enabled(monkeypatch):
