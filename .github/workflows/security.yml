@@ -16,16 +16,13 @@ jobs:
 
       - uses: astral-sh/setup-uv@v6
 
-      - name: Install backend deps (uv)
-        working-directory: backend
-        run: uv sync --frozen
+      - name: Install deps (uv)
+        run: uv sync --group dev --locked
 
       - name: Backend tests
-        working-directory: backend
-        run: uv run pytest
+        run: PYTHONPATH=backend:. uv run pytest backend/tests
 
       - name: Backend dependency audit (pip-audit)
-        working-directory: backend
         run: |
           uv export --format requirements-txt -o /tmp/backend-requirements.txt
           python -m pip install --upgrade pip-audit
@@ -75,4 +72,3 @@ jobs:
 
       - name: Semgrep (frontend)
         run: semgrep scan --config p/owasp-top-ten --config p/javascript --config p/react --metrics=off flip-prototype
-
