@@ -94,8 +94,10 @@ def _claims_to_user(claims: dict[str, Any]) -> AuthenticatedUser:
     if not isinstance(sub, str) or not sub.strip():
         raise HTTPException(status_code=401, detail="Invalid token.")
 
-    role = claims.get("role") if isinstance(claims.get("role"), str) else None
-    email = claims.get("email") if isinstance(claims.get("email"), str) else None
+    raw_role = claims.get("role")
+    role = raw_role if isinstance(raw_role, str) else None
+    raw_email = claims.get("email")
+    email = raw_email if isinstance(raw_email, str) else None
     return AuthenticatedUser(sub=sub, role=role, email=email, raw_claims=claims)
 
 
@@ -125,12 +127,24 @@ def maybe_authenticated_user(request: Request) -> AuthenticatedUser | None:
         return None
     try:
         token = _get_bearer_token(request)
-    except HTTPException:
+    except HTTPException as exc:
+        logger.debug(
+            "auth_optional_failed stage=bearer_token path=%s user_agent=%s detail=%s",
+            request.url.path,
+            request.headers.get("user-agent"),
+            exc.detail,
+        )
         return None
     try:
         claims = _validate_and_decode(token)
         return _claims_to_user(claims)
-    except HTTPException:
+    except HTTPException as exc:
+        logger.debug(
+            "auth_optional_failed stage=validate_decode path=%s user_agent=%s detail=%s",
+            request.url.path,
+            request.headers.get("user-agent"),
+            exc.detail,
+        )
         return None
 
 

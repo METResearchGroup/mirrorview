@@ -144,6 +144,7 @@ def _load_supabase_jwt_secret() -> str | None:
 def _load_supabase_jwt_audience() -> str | None:
     return os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
 
+
 def _load_api_keys() -> dict[str, str | None]:
     return {
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
