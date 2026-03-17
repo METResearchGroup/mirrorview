@@ -45,10 +45,11 @@ def _parse_cors_origins() -> list[str]:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    if settings().auth_required:
-        supabase_url = (settings().supabase_url or "").strip()
-        jwt_secret = (settings().supabase_jwt_secret or "").strip()
-        aud = (settings().supabase_jwt_audience or "").strip()
+    config = settings()
+    if config.auth_required:
+        supabase_url = (config.supabase_url or "").strip()
+        jwt_secret = (config.supabase_jwt_secret or "").strip()
+        aud = (config.supabase_jwt_audience or "").strip()
         if not supabase_url:
             raise RuntimeError("SUPABASE_URL must be set when AUTH_REQUIRED=true.")
         if not jwt_secret:
@@ -57,9 +58,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             raise RuntimeError("SUPABASE_JWT_AUDIENCE must be set when AUTH_REQUIRED=true.")
 
     if is_persistence_enabled():
-        database_url = settings().require_database_url()
-        if settings().run_migrations_on_startup:
-            migration_database_url = settings().get_migration_database_url()
+        database_url = config.require_database_url()
+        if config.run_migrations_on_startup:
+            migration_database_url = config.get_migration_database_url()
             await run_sync(
                 run_migrations_to_head,
                 migration_database_url,
