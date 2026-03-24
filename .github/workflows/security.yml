@@ -1,0 +1,74 @@
+name: Security + CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install deps (uv)
+        run: uv sync --group dev --locked
+
+      - name: Backend tests
+        run: PYTHONPATH=backend:. uv run pytest backend/tests
+
+      - name: Backend dependency audit (pip-audit)
+        run: |
+          uv export --format requirements-txt -o /tmp/backend-requirements.txt
+          python -m pip install --upgrade pip-audit
+          pip-audit -r /tmp/backend-requirements.txt
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flip-prototype
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Dependency audit (pnpm)
+        run: pnpm audit --audit-level=high
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install semgrep
+        run: python -m pip install --upgrade semgrep
+
+      - name: Semgrep (backend)
+        run: semgrep scan --config p/owasp-top-ten --config p/python --metrics=off backend
+
+      - name: Semgrep (frontend)
+        run: semgrep scan --config p/owasp-top-ten --config p/javascript --config p/react --metrics=off flip-prototype

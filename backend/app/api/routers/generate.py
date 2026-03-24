@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth.supabase_jwt import AuthenticatedUser, require_authenticated_user
 from app.di.providers import get_generation_service
 from app.schemas import FlipResponse, GenerateResponseRequest, ModelCatalogResponse, ModelOption
 from app.services.generation_service import GenerationService
@@ -37,6 +38,7 @@ def list_models() -> ModelCatalogResponse:
 async def generate_response(
     req: GenerateResponseRequest,
     svc: GenerationService = Depends(get_generation_service),
+    _: AuthenticatedUser = Depends(require_authenticated_user),
 ) -> FlipResponse:
     submission_id = str(req.submission.id)
     model_id = req.submission.model_id

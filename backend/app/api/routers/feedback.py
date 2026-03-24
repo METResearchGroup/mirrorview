@@ -4,6 +4,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth.supabase_jwt import AuthenticatedUser, require_authenticated_user
 from app.di.providers import get_feedback_service
 from app.schemas import AckResponse, EditFeedbackRequest, ThumbFeedbackRequest
 from app.services.feedback_service import FeedbackService
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/feedback")
 async def submit_thumb_feedback(
     req: ThumbFeedbackRequest,
     svc: FeedbackService = Depends(get_feedback_service),
+    _: AuthenticatedUser = Depends(require_authenticated_user),
 ) -> AckResponse:
     try:
         logger.info(
@@ -40,6 +42,7 @@ async def submit_thumb_feedback(
 async def submit_edit_feedback(
     req: EditFeedbackRequest,
     svc: FeedbackService = Depends(get_feedback_service),
+    _: AuthenticatedUser = Depends(require_authenticated_user),
 ) -> AckResponse:
     try:
         logger.info(
